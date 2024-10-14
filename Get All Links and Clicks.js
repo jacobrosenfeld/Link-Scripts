@@ -1,6 +1,6 @@
-// Define the API URL and key
-var API_URL = "API_URL"; // replace with your API URL
-var API_KEY = "API_Key"; // replace with your API Key
+// Define the API URL and key - commented out to set in gs pull script
+// var API_URL = "API_URL"; // replace with your API URL
+// var API_KEY = "API_Key"; // replace with your API Key
 
 // Define the sheet name and headers
 var SHEET_NAME = "Links";
