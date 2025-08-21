@@ -10,15 +10,18 @@ export async function POST(req: Request) {
 
   const campaignSlug = slugify(campaign);
   const dateSlug = slugify(date);
-  const pubList: string[] = Array.isArray(pubs) && pubs.length ? pubs : ["default"];
+  const pubList: string[] = Array.isArray(pubs) && pubs.length ? pubs : [""];
   const dom = (domain || "").trim() || process.env.DEFAULT_DOMAIN || "adtracking.link";
 
   const results = [] as any[];
   for (const pub of pubList) {
-    const pubSlug = slugify(pub);
-    const slug = [campaignSlug, pubSlug, dateSlug].filter(Boolean).join("-");
+    const pubSlug = pub ? slugify(pub) : "";
+    // Create slug without publication if no pub is provided
+    const slug = pub ? 
+      [campaignSlug, pubSlug, dateSlug].filter(Boolean).join("-") :
+      [campaignSlug, dateSlug].filter(Boolean).join("-");
     const { ok, data } = await createShortLink(longUrl, slug, dom);
-    results.push({ pub, slug: `${dom}/${slug}`, ok, data });
+    results.push({ pub: pub || "No Publication", slug: `${dom}/${slug}`, ok, data });
   }
 
   return NextResponse.json({ results });
