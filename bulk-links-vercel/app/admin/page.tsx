@@ -29,11 +29,15 @@ export default function AdminPage() {
     const processedPubs = raw.split("\n").map((s: string) => s.trim()).filter(Boolean);
     console.log("Processed pubs array:", processedPubs);
     
+    // Sort alphabetically (case-insensitive)
+    const sortedPubs = processedPubs.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+    console.log("Sorted pubs array:", sortedPubs);
+    
     try {
       const r = await fetch("/api/pubs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pubs: processedPubs })
+        body: JSON.stringify({ pubs: sortedPubs })
       });
       
       if (r.ok) {
