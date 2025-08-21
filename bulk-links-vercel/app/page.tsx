@@ -121,24 +121,51 @@ export default function HomePage() {
   async function addNewPublication() {
     if (!newPubName.trim()) return;
     
+    const trimmedName = newPubName.trim();
     setAddingPubLoading(true);
+    
     try {
+      // Create the new list locally first
+      const newPubsList = [...pubs, trimmedName];
+      
       const response = await fetch("/api/pubs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pubs: [...pubs, newPubName.trim()] }),
+        body: JSON.stringify({ pubs: newPubsList }),
       });
       
       if (response.ok) {
         const data = await response.json();
-        setPubs(data.pubs || []);
+        console.log("API Response:", data); // Debug log
+        
+        // Ensure we have the expected data structure
+        if (data.pubs && Array.isArray(data.pubs)) {
+          setPubs(data.pubs);
+        } else {
+          // Fallback to our local list if API response is unexpected
+          setPubs(newPubsList);
+        }
+        
         setNewPubName("");
         setIsAddingPub(false);
+        
         // Auto-select the newly added publication
-        setSelected((s) => ({ ...s, [newPubName.trim()]: true }));
+        setSelected((s) => ({ ...s, [trimmedName]: true }));
+      } else {
+        console.error("Failed to add publication: API response not ok", response.status);
+        // Fallback to optimistic update
+        setPubs([...pubs, trimmedName]);
+        setNewPubName("");
+        setIsAddingPub(false);
+        setSelected((s) => ({ ...s, [trimmedName]: true }));
       }
     } catch (error) {
       console.error("Failed to add publication:", error);
+      // Fallback to optimistic update
+      setPubs([...pubs, trimmedName]);
+      setNewPubName("");
+      setIsAddingPub(false);
+      setSelected((s) => ({ ...s, [trimmedName]: true }));
     }
     setAddingPubLoading(false);
   }
