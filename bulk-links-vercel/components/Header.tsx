@@ -2,7 +2,6 @@
 import { JJALogoAdaptive } from "./JJALogoAdaptive";
 import { LogoutButton } from "./LogoutButton";
 import { AdminButton } from "./AdminButton";
-import { ThemeToggle } from "./ThemeToggle";
 
 interface HeaderProps {
   title: string;
@@ -22,7 +21,6 @@ export function Header({ title }: HeaderProps) {
         </div>
         <div className="flex items-center gap-3">
           <AdminButton />
-          <ThemeToggle />
           <LogoutButton />
         </div>
       </div>

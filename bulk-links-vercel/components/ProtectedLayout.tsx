@@ -2,6 +2,7 @@
 
 import { ReactNode } from 'react'
 import { Footer } from './Footer'
+import { ThemeToggle } from './ThemeToggle'
 
 interface ProtectedLayoutProps {
   children: ReactNode
@@ -14,6 +15,7 @@ export function ProtectedLayout({ children }: ProtectedLayoutProps) {
         {children}
       </main>
       <Footer />
+      <ThemeToggle />
     </div>
   )
 }
