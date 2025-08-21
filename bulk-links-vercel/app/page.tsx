@@ -15,6 +15,7 @@ export default function HomePage() {
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<any[]>([]);
+  const [urlError, setUrlError] = useState<string>("");
 
   useEffect(() => {
     fetch("/api/pubs").then(r => r.json()).then((d) => setPubs(d.pubs || []));
@@ -77,26 +78,58 @@ export default function HomePage() {
     document.body.removeChild(link);
   }
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setResults([]);
-    const resp = await fetch("/api/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ longUrl, campaign, date, pubs: selectedList, domain }),
-    });
-    const data = await resp.json();
-    setResults(data.results || []);
-    setLoading(false);
+  function validateUrl(url: string): string {
+    if (!url.trim()) {
+      return "";
+    }
+    
+    try {
+      const urlObj = new URL(url);
+      if (urlObj.protocol !== 'http:' && urlObj.protocol !== 'https:') {
+        return "URL must start with http:// or https://";
+      }
+      return "";
+    } catch {
+      return "Please enter a valid URL starting with http:// or https://";
+    }
   }
+
+  function handleUrlChange(value: string) {
+    setLongUrl(value);
+    setUrlError(validateUrl(value));
+  }
+
+    async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    
+    // Validate URL before submission
+    const urlValidationError = validateUrl(longUrl);
+    if (urlValidationError) {
+      setUrlError(urlValidationError);
+      return;
+    }
+    
+    setLoading(true);
+    const selectedList = Object.keys(selected).filter((k) => selected[k]);
 
   return (
     <ProtectedLayout>
       <Header title="Bulk Link Creator" />
       <form onSubmit={onSubmit} className="mt-4">
         <Label>Long URL</Label>
-        <Input placeholder="https://example.com/landing?..." value={longUrl} onChange={(e) => setLongUrl(e.target.value)} required />
+        <Input 
+          placeholder="https://example.com/landing?..." 
+          value={longUrl} 
+          onChange={(e) => handleUrlChange(e.target.value)} 
+          required 
+          className={urlError ? "!border-red-500 !ring-red-500" : ""}
+        />
+        {urlError && (
+          <div className="text-red-500 text-sm mt-1 flex items-center gap-1">
+            <span>⚠️</span>
+            {urlError}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
