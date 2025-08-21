@@ -52,7 +52,7 @@ export default function AdminPage() {
 
   return (
     <ProtectedLayout>
-      <Header title="Admin • Pubs" showBackLink={true} backHref="/" backText="Back" />
+      <Header title="Admin • Pubs" />
       
       <div className="mt-4">
         <div className="md:col-span-2">

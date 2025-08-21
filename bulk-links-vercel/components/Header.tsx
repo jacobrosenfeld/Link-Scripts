@@ -1,16 +1,14 @@
 "use client";
 import { JJALogoAdaptive } from "./JJALogoAdaptive";
 import { LogoutButton } from "./LogoutButton";
+import { AdminButton } from "./AdminButton";
 import { ThemeToggle } from "./ThemeToggle";
 
 interface HeaderProps {
   title: string;
-  showBackLink?: boolean;
-  backHref?: string;
-  backText?: string;
 }
 
-export function Header({ title, showBackLink = false, backHref = "/", backText = "Back" }: HeaderProps) {
+export function Header({ title }: HeaderProps) {
   return (
     <header className="mb-6">
       {/* Logo and Company */}
@@ -23,19 +21,15 @@ export function Header({ title, showBackLink = false, backHref = "/", backText =
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <AdminButton />
           <ThemeToggle />
           <LogoutButton />
         </div>
       </div>
       
-      {/* Page Title and Navigation */}
+      {/* Page Title */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{title}</h1>
-        {showBackLink && (
-          <a href={backHref} className="text-sm text-blue-300 underline hover:text-blue-200">
-            {backText}
-          </a>
-        )}
+        <h1 className="text-2xl font-bold text-[color:var(--foreground)]">{title}</h1>
       </div>
     </header>
   );

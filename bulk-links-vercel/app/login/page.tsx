@@ -46,8 +46,8 @@ export default function LoginPage() {
             <div className="flex justify-center mb-4">
               <JJALogoAdaptive className="h-16 w-auto" />
             </div>
-            <h1 className="text-2xl font-bold text-[#e8eef6] mb-1">Joseph Jacobs Advertising</h1>
-            <h2 className="text-xl font-semibold text-[#e8eef6] mb-2">Login</h2>
+            <h1 className="text-2xl font-bold text-[color:var(--foreground)] mb-1">Joseph Jacobs Advertising</h1>
+            <h2 className="text-xl font-semibold text-[color:var(--foreground)] mb-2">Login</h2>
             <p className="text-[color:var(--muted)]">
               Access Bulk Link Creator
             </p>

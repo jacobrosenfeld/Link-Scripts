@@ -37,7 +37,7 @@ export default function HomePage() {
 
   return (
     <ProtectedLayout>
-      <Header title="Bulk Link Creator" showBackLink={true} backHref="/admin" backText="Admin" />
+      <Header title="Bulk Link Creator" />
       <form onSubmit={onSubmit} className="mt-4">
         <Label>Long URL</Label>
         <Input placeholder="https://example.com/landing?..." value={longUrl} onChange={(e) => setLongUrl(e.target.value)} required />
@@ -72,11 +72,12 @@ export default function HomePage() {
               <div className="text-sm text-[color:var(--muted)]">No publications configured yet. Ask an admin to add some.</div>
             )}
             {pubs.map((p) => (
-              <label key={p} className="flex items-center gap-2 bg-[#0b1219] border border-[color:var(--border)] rounded-lg px-3 py-2 cursor-pointer">
+              <label key={p} className="flex items-center gap-2 bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg px-3 py-2 cursor-pointer hover:bg-[color:var(--accent)]">
                 <input
                   type="checkbox"
                   checked={!!selected[p]}
                   onChange={(e) => setSelected((s) => ({ ...s, [p]: e.target.checked }))}
+                  className="rounded border-[color:var(--border)] text-blue-600 focus:ring-blue-500"
                 />
                 <span>{p}</span>
               </label>
