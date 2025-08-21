@@ -1,20 +1,27 @@
 "use client";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Button } from "./Field";
 
 export function AdminButton() {
   const router = useRouter();
+  const pathname = usePathname();
+  
+  const isAdminPage = pathname === "/admin";
 
-  function handleAdmin() {
-    router.push("/admin");
+  function handleClick() {
+    if (isAdminPage) {
+      router.push("/");
+    } else {
+      router.push("/admin");
+    }
   }
 
   return (
     <Button
-      onClick={handleAdmin}
+      onClick={handleClick}
       className="!mt-0 !bg-blue-600 hover:!brightness-110 text-sm px-3 py-1"
     >
-      Admin Panel
+      {isAdminPage ? "Home" : "Admin Panel"}
     </Button>
   );
 }
