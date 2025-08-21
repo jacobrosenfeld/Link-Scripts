@@ -235,7 +235,7 @@ export default function AdminPage() {
                         className="text-xs px-2 py-1 bg-gray-500 text-white rounded hover:bg-gray-600"
                         title="Cancel"
                       >
-                        No
+                        ✕
                       </button>
                     </div>
                   ) : (
