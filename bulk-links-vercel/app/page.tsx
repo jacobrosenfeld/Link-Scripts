@@ -36,6 +36,47 @@ export default function HomePage() {
 
   const selectedList = useMemo(() => Object.keys(selected).filter((k) => selected[k]), [selected]);
 
+  function exportToCSV() {
+    if (results.length === 0) return;
+
+    // Create CSV headers
+    const headers = ['Publication', 'Campaign', 'Date', 'Slug', 'Status', 'Short URL', 'Original URL', 'Error'];
+    
+    // Create CSV rows
+    const csvRows = results.map((r: any) => {
+      return [
+        r.pub || '',
+        campaign || '',
+        date || '',
+        r.slug || '',
+        r.ok ? 'Success' : 'Error',
+        r.ok && r.data?.short ? r.data.short : '',
+        longUrl || '',
+        r.ok ? '' : (r.data?.message || r.data?.error || 'Unknown error')
+      ].map(field => {
+        // Escape quotes and wrap in quotes if contains comma, quote, or newline
+        const escaped = String(field).replace(/"/g, '""');
+        return /[,"\n\r]/.test(escaped) ? `"${escaped}"` : escaped;
+      });
+    });
+
+    // Combine headers and rows
+    const csvContent = [headers, ...csvRows]
+      .map(row => row.join(','))
+      .join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `bulk-links-${campaign || 'export'}-${date || new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -117,7 +158,12 @@ export default function HomePage() {
 
       {results.length > 0 && (
         <div className="mt-6">
-          <h2 className="text-xl font-semibold mb-2">Results</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Results</h2>
+            <Button onClick={exportToCSV} className="!mt-0 !bg-green-600 hover:!brightness-110">
+              📊 Export CSV
+            </Button>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
