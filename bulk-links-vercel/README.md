@@ -1,6 +1,19 @@
 # Bulk Link Creator (Next.js on Vercel)
 
-Create bulk short links with flexible URL patterns using your branded domains. Supports both `[Campaign]-[Pub]-[Date]` and `[Campaign]-[Date]` formats.
+Create bulk short links with flexible URL patterns usin## UI/UX Features
+- **🎯 Smart Navigation**: Context-aware Admin Panel ↔ Home button
+- **⚡ Loading States**: Real-time feedback for all async operations
+- **🔄 Adaptive Branding**: Logo switches based on theme (dark/light variants)
+- **📋 Results Table**: Comprehensive status display with clickable links
+- **🔤 Auto-Sorting**: Publishers automatically alphabetized on save
+- **♿ Accessibility**: Proper focus states, tooltips, and semantic HTML
+- **🔍 Form Validation**: 
+  - Real-time URL validation with visual feedback (red borders, warning icons)
+  - Required field validation for campaign name
+  - Smart date defaults to prevent empty submissions
+- **⚠️ User Confirmations**: Clear prompts when creating links without publications
+- **📊 Enhanced CSV Export**: Clean column structure with logical data organization
+- **🎛️ Dynamic Previews**: Live URL pattern updates based on publisher selectionranded domains. Supports both `[Campaign]-[Pub]-[Date]` and `[Campaign]-[Date]` formats.
 
 ## ✨ Key Features
 - **🔐 Secure Login System**: JWT-based authentication with 24-hour sessions
@@ -86,11 +99,13 @@ Examples:
 - **🔐 Authentication**: JWT-based login system with middleware protection
 - **🌐 Dynamic Domains**: Fetches branded domains from JJA API automatically
 - **🎨 Theme System**: Complete light/dark mode with CSS custom properties
-- **📊 CSV Export**: Client-side CSV generation and download
+- **📊 CSV Export**: Client-side CSV generation with optimized column structure
 - **⚛️ Framework**: Next.js 14 with App Router and TypeScript
 - **💅 Styling**: Tailwind CSS with adaptive theming
 - **☁️ Deployment**: Optimized for Vercel with zero-config deployment
 - **📱 Responsive**: Mobile-first design with adaptive layouts
+- **🔍 Validation**: Real-time URL validation with visual feedback
+- **📅 Smart Defaults**: Automatic date formatting and population
 
 ## UI/UX Features
 - **🎯 Smart Navigation**: Context-aware Admin Panel ↔ Home button
@@ -108,6 +123,18 @@ Examples:
 - "Made with ❤️ in Teaneck, NJ" footer
 - Consistent company colors and styling throughout
 
+## CSV Export Format
+The CSV export includes the following columns in order:
+1. **Publication** - Publisher name (or "No Publication" if none selected)
+2. **Campaign** - Campaign name from form
+3. **Date** - Date from form (MM-DD-YY format)
+4. **Short URL** - Complete shortened URL (e.g., `adtracking.link/campaign-pub-date`)
+5. **Status** - Success/Error indicator
+6. **Original URL** - The long URL that was shortened
+7. **Error** - Error message if link creation failed (empty for successful links)
+
+The CSV file is automatically named with the pattern: `bulk-links-[campaign]-[date].csv`
+
 ## API Integration
 The app integrates with the JJA Link API for:
 - **Domain Management**: `GET /api/domains` - Fetches branded domains list
@@ -115,6 +142,12 @@ The app integrates with the JJA Link API for:
 - **Authentication**: Bearer token authentication with retry logic
 
 ## Recent Updates
+- ✅ **Flexible URL Patterns**: Support for both with/without publication URL structures
+- ✅ **Smart Date Defaults**: Auto-populates today's date in MM-DD-YY format
+- ✅ **Enhanced URL Validation**: Real-time validation with visual feedback
+- ✅ **User Confirmations**: Prompts when creating links without publications
+- ✅ **Improved CSV Export**: Clean column structure with logical data organization
+- ✅ **Dynamic URL Previews**: Live pattern updates based on publisher selection
 - ✅ **CSV Export**: Export generated links to spreadsheet format
 - ✅ **Dynamic Domains**: Replaced static domain with API-driven dropdown
 - ✅ **Theme System**: Complete light/dark mode implementation

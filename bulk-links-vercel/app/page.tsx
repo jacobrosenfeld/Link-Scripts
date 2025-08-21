@@ -198,7 +198,7 @@ export default function HomePage() {
                 : `${domain || "adtracking.link"}/[Campaign]-[Date]`
             } readOnly />
             {selectedList.length === 0 && (
-              <p className="text-xs text-orange-600 mt-1">No publications selected - URL will be created without publication part</p>
+              <p className="text-xs text-orange-600 mt-1">No publications selected - URL will be created without publication portion of URL</p>
             )}
           </div>
         </div>
