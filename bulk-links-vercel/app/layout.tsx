@@ -16,11 +16,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body className="min-h-screen">
-        <div className="max-w-5xl mx-auto p-6">
-          <div className="bg-[color:var(--card)] border border-[color:var(--border)] rounded-2xl shadow-xl p-6">
-            {children}
-          </div>
-        </div>
+        {children}
       </body>
     </html>
   );

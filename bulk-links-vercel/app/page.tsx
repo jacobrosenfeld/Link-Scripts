@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { Label, Input, Button } from "@/components/Field";
+import { ProtectedLayout } from "@/components/ProtectedLayout";
 
 export default function HomePage() {
   const [longUrl, setLongUrl] = useState("");
@@ -34,11 +35,12 @@ export default function HomePage() {
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Bulk Link Creator</h1>
-        <a href="/admin" className="text-sm text-blue-300 underline">Admin</a>
-      </div>
+    <ProtectedLayout>
+      <div>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Bulk Link Creator</h1>
+          <a href="/admin" className="text-sm text-blue-300 underline">Admin</a>
+        </div>
       <form onSubmit={onSubmit} className="mt-4">
         <Label>Long URL</Label>
         <Input placeholder="https://example.com/landing?..." value={longUrl} onChange={(e) => setLongUrl(e.target.value)} required />
@@ -123,6 +125,7 @@ export default function HomePage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </ProtectedLayout>
   );
 }

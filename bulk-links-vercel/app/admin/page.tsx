@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Label, Input, Button, Textarea } from "@/components/Field";
+import { ProtectedLayout } from "@/components/ProtectedLayout";
 
 export default function AdminPage() {
   const [token, setToken] = useState<string>("");
@@ -34,11 +35,12 @@ export default function AdminPage() {
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Admin • Pubs</h1>
-        <a href="/" className="text-sm text-blue-300 underline">Back</a>
-      </div>
+    <ProtectedLayout>
+      <div>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Admin • Pubs</h1>
+          <a href="/" className="text-sm text-blue-300 underline">Back</a>
+        </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
         <div className="md:col-span-2">
@@ -63,6 +65,7 @@ export default function AdminPage() {
           {pubs.length === 0 && <div className="text-sm text-[color:var(--muted)]">No pubs yet.</div>}
         </div>
       </div>
-    </div>
+      </div>
+    </ProtectedLayout>
   );
 }
