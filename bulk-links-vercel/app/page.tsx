@@ -104,6 +104,17 @@ export default function HomePage() {
     document.body.removeChild(link);
   }
 
+  function startNewCampaign() {
+    // Clear form fields
+    setLongUrl("");
+    setCampaign("");
+    setDate(getTodayFormatted());
+    setSelected({});
+    setResults([]);
+    setUrlError("");
+    setLoading(false);
+  }
+
   function validateUrl(url: string): string {
     if (!url.trim()) {
       return "";
@@ -248,9 +259,14 @@ export default function HomePage() {
         <div className="mt-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">Results</h2>
-            <Button onClick={exportToCSV} className="!mt-0 !bg-green-600 hover:!brightness-110">
-              📊 Export CSV
-            </Button>
+            <div className="flex gap-3">
+              <Button onClick={startNewCampaign} className="!mt-0 !bg-blue-600 hover:!brightness-110">
+                🚀 New Campaign
+              </Button>
+              <Button onClick={exportToCSV} className="!mt-0 !bg-green-600 hover:!brightness-110">
+                📊 Export CSV
+              </Button>
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
