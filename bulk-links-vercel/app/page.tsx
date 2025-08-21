@@ -46,29 +46,6 @@ export default function HomePage() {
 
   const selectedList = useMemo(() => Object.keys(selected).filter((k) => selected[k]), [selected]);
 
-  // Rearrange publications for column-first layout
-  const arrangeInColumns = (items: string[], cols: number) => {
-    if (items.length === 0) return [];
-    const rows = Math.ceil(items.length / cols);
-    const arranged = [];
-    
-    for (let row = 0; row < rows; row++) {
-      for (let col = 0; col < cols; col++) {
-        const index = col * rows + row;
-        if (index < items.length) {
-          arranged.push(items[index]);
-        }
-      }
-    }
-    return arranged;
-  };
-
-  const arrangedPubs = useMemo(() => {
-    // Use 4 columns for md+ screens, 2 for smaller screens
-    // We'll arrange for the larger layout and let CSS Grid handle responsive behavior
-    return arrangeInColumns(pubs, 4);
-  }, [pubs]);
-
   function exportToCSV() {
     if (results.length === 0) return;
 
@@ -228,12 +205,12 @@ export default function HomePage() {
 
         <div className="mt-4">
           <Label>Select Publications</Label>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <div className="flex flex-col flex-wrap gap-2 h-auto" style={{ maxHeight: `${Math.ceil(pubs.length / 4) * 60}px` }}>
             {pubs.length === 0 && (
               <div className="text-sm text-[color:var(--muted)]">No publications configured yet. Ask an admin to add some.</div>
             )}
-            {arrangedPubs.map((p) => (
-              <label key={p} className="flex items-center gap-2 bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg px-3 py-2 cursor-pointer hover:bg-[color:var(--accent)]">
+            {pubs.map((p) => (
+              <label key={p} className="flex items-center gap-2 bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg px-3 py-2 cursor-pointer hover:bg-[color:var(--accent)] w-48">
                 <input
                   type="checkbox"
                   checked={!!selected[p]}
