@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { Label, Input, Button, Textarea } from "@/components/Field";
 import { ProtectedLayout } from "@/components/ProtectedLayout";
+import { Header } from "@/components/Header";
 
 export default function AdminPage() {
   const [pubs, setPubs] = useState<string[]>([]);
@@ -45,12 +46,7 @@ export default function AdminPage() {
 
   return (
     <ProtectedLayout>
-      <div>
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Admin • Pubs</h1>
-          <a href="/" className="text-sm text-blue-300 underline">Back</a>
-        </div>
-
+      <Header title="Admin • Pubs" showBackLink={true} backHref="/" backText="Back" />
       <div className="mt-4">
         <div className="md:col-span-2">
           <Label>Pubs (one per line)</Label>
@@ -74,7 +70,6 @@ export default function AdminPage() {
           ))}
           {pubs.length === 0 && <div className="text-sm text-[color:var(--muted)]">No pubs yet.</div>}
         </div>
-      </div>
       </div>
     </ProtectedLayout>
   );

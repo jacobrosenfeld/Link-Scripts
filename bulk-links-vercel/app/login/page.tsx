@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Label, Input, Button } from "@/components/Field";
+import { JJALogo } from "@/components/JJALogo";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -42,8 +43,12 @@ export default function LoginPage() {
       <div className="max-w-md w-full mx-4">
         <div className="bg-[color:var(--card)] border border-[color:var(--border)] rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-[#e8eef6]">Login</h1>
-            <p className="text-[color:var(--muted)] mt-2">
+            <div className="flex justify-center mb-4">
+              <JJALogo className="h-16 w-auto" />
+            </div>
+            <h1 className="text-2xl font-bold text-[#e8eef6] mb-1">Joseph Jacobs Advertising</h1>
+            <h2 className="text-xl font-semibold text-[#e8eef6] mb-2">Login</h2>
+            <p className="text-[color:var(--muted)]">
               Access Bulk Link Creator
             </p>
           </div>
