@@ -228,7 +228,7 @@ export default function AdminPage() {
                         className="text-xs px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
                         title="Confirm delete"
                       >
-                        {deleting === p ? "..." : "Yes"}
+                        {deleting === p ? "..." : "✓"}
                       </button>
                       <button
                         onClick={() => setDeleteConfirm(null)}
