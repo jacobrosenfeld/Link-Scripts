@@ -5,9 +5,18 @@ import { ProtectedLayout } from "@/components/ProtectedLayout";
 import { Header } from "@/components/Header";
 
 export default function HomePage() {
+  // Format today's date as MM-DD-YY
+  const getTodayFormatted = () => {
+    const today = new Date();
+    const month = (today.getMonth() + 1).toString().length === 1 ? '0' + (today.getMonth() + 1) : (today.getMonth() + 1).toString();
+    const day = today.getDate().toString().length === 1 ? '0' + today.getDate() : today.getDate().toString();
+    const year = today.getFullYear().toString().slice(-2);
+    return `${month}-${day}-${year}`;
+  };
+
   const [longUrl, setLongUrl] = useState("");
   const [campaign, setCampaign] = useState("");
-  const [date, setDate] = useState("");
+  const [date, setDate] = useState(getTodayFormatted());
   const [domain, setDomain] = useState("");
   const [domains, setDomains] = useState<string[]>([]);
   const [domainsLoading, setDomainsLoading] = useState(true);
@@ -149,7 +158,7 @@ export default function HomePage() {
           </div>
           <div>
             <Label>Date</Label>
-            <Input placeholder="2025-08-21" value={date} onChange={(e) => setDate(e.target.value)} required />
+            <Input placeholder="MM-DD-YY" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
         </div>
 
