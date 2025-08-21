@@ -13,7 +13,15 @@ Create bulk short links with flexible URL patterns usin## UI/UX Features
   - Smart date defaults to prevent empty submissions
 - **⚠️ User Confirmations**: Clear prompts when creating links without publications
 - **📊 Enhanced CSV Export**: Clean column structure with logical data organization
-- **🎛️ Dynamic Previews**: Live URL pattern updates based on publisher selectionranded domains. Supports both `[Campaign]-[Pub]-[Date]` and `[Campaign]-[Date]` formats.
+- **🎛️ Dynamic Previews**: Live URL pattern updates based on publisher selection
+- **🚀 Workflow Efficiency**: 
+  - One-click "New Campaign" button to instantly reset form
+  - Smart field clearing with preserved defaults
+  - Seamless campaign-to-campaign workflow
+- **📱 Responsive Publisher Grid**:
+  - Column-first layout for easy alphabetical scanning
+  - Adaptive breakpoints: 4 columns → 2 columns → 1 column
+  - Touch-friendly checkboxes on mobile devicesranded domains. Supports both `[Campaign]-[Pub]-[Date]` and `[Campaign]-[Date]` formats.
 
 ## ✨ Key Features
 - **🔐 Secure Login System**: JWT-based authentication with 24-hour sessions
@@ -27,6 +35,9 @@ Create bulk short links with flexible URL patterns usin## UI/UX Features
 - **📅 Smart Date Defaults**: Automatically defaults to today's date in MM-DD-YY format
 - **🔍 URL Validation**: Real-time validation with visual feedback for proper URL formatting
 - **⚠️ Smart Confirmations**: User confirmation when creating links without publications
+- **🚀 Quick Campaign Reset**: One-click "New Campaign" button to start fresh
+- **📝 Case Preservation**: Maintains original text capitalization in URLs
+- **📋 Column-First Layout**: Publications organized in easy-to-scan vertical columns
 
 ## Security
 - **Login Protection**: The entire app is protected with username/password authentication
@@ -59,16 +70,26 @@ Create bulk short links with flexible URL patterns usin## UI/UX Features
 ### Create Bulk Links
 1. **Enter Details**:
    - Long URL (landing page destination) - **validates in real-time for proper format**
-   - Campaign name (required)
+   - Campaign name (required) - **case preserved in final URLs**
    - Date - **auto-defaults to today's date in MM-DD-YY format**
    - Select domain from your branded domains dropdown
 2. **Select Publishers**: 
    - Choose from configured publisher checkboxes (optional)
+   - **Column-first layout** with responsive breakpoints (4→2→1 columns)
    - **Dynamic preview** shows URL pattern based on selection
    - If no publishers selected, you'll be asked to confirm creating links without publication
 3. **Generate**: Click "Create Links" to bulk generate
-4. **Export**: Use "📊 Export CSV" to download results spreadsheet
-5. **Copy Links**: Click individual short URLs to visit or copy
+4. **Review Results**: View status table with success/error indicators
+5. **Export or Continue**: 
+   - Use "📊 Export CSV" to download results spreadsheet
+   - Use "🚀 New Campaign" to instantly clear form and start fresh
+6. **Copy Links**: Click individual short URLs to visit or copy
+
+### Workflow Efficiency
+- **Smart Date Management**: Date automatically defaults to today in MM-DD-YY format
+- **One-Click Reset**: "New Campaign" button clears all fields and resets to fresh state
+- **Case Preservation**: Campaign names like "SpringSale" and publishers like "Facebook" maintain capitalization
+- **Responsive Publisher Grid**: Publications arranged in easy-to-scan columns that adapt to screen size
 
 ### URL Pattern Flexibility
 The app supports two URL patterns based on your publisher selection:
@@ -94,6 +115,8 @@ Examples:
 - With publication: `adtracking.link/SpringSale-Facebook-08-21-25`
 - Without publication: `adtracking.link/SpringSale-08-21-25`
 
+*Note: Case is preserved from your input - "SpringSale" stays "SpringSale", not "springsale"*
+
 ## Technical Features
 - **🗄️ Storage**: Uses Vercel Blob (free tier) for publisher data persistence
 - **🔐 Authentication**: JWT-based login system with middleware protection
@@ -106,6 +129,8 @@ Examples:
 - **📱 Responsive**: Mobile-first design with adaptive layouts
 - **🔍 Validation**: Real-time URL validation with visual feedback
 - **📅 Smart Defaults**: Automatic date formatting and population
+- **🔤 Case Preservation**: Maintains original text capitalization in slug generation
+- **📋 Column Layout**: CSS Grid with responsive breakpoints for publisher selection
 
 ## UI/UX Features
 - **🎯 Smart Navigation**: Context-aware Admin Panel ↔ Home button
@@ -142,6 +167,10 @@ The app integrates with the JJA Link API for:
 - **Authentication**: Bearer token authentication with retry logic
 
 ## Recent Updates
+- ✅ **New Campaign Workflow**: One-click button to reset form and start fresh campaign
+- ✅ **Case Preservation**: URLs now maintain original text capitalization (SpringSale → SpringSale)
+- ✅ **Responsive Publisher Grid**: Column-first layout with 4→2→1 responsive breakpoints
+- ✅ **Enhanced User Experience**: Improved workflow efficiency and form management
 - ✅ **Flexible URL Patterns**: Support for both with/without publication URL structures
 - ✅ **Smart Date Defaults**: Auto-populates today's date in MM-DD-YY format
 - ✅ **Enhanced URL Validation**: Real-time validation with visual feedback
