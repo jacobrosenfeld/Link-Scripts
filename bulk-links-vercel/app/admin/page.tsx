@@ -9,6 +9,8 @@ export default function AdminPage() {
   const [raw, setRaw] = useState<string>("");
   const [saved, setSaved] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   async function load() {
     const r = await fetch("/api/pubs");
@@ -54,6 +56,33 @@ export default function AdminPage() {
     }
   }
 
+  async function deletePub(pubToDelete: string) {
+    setDeleting(pubToDelete);
+    const updatedPubs = pubs.filter(p => p !== pubToDelete);
+    
+    try {
+      const r = await fetch("/api/pubs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pubs: updatedPubs })
+      });
+      
+      if (r.ok) {
+        setPubs(updatedPubs);
+        setRaw(updatedPubs.join("\n"));
+        setSaved(`Deleted "${pubToDelete}" ✔`);
+      } else {
+        const d = await r.json().catch(() => ({}));
+        setSaved(`Error deleting: ${d?.message || r.status}`);
+      }
+    } catch (error) {
+      setSaved(`Error deleting: ${error instanceof Error ? error.message : "Unknown error"}`);
+    } finally {
+      setDeleting(null);
+      setDeleteConfirm(null);
+    }
+  }
+
   return (
     <ProtectedLayout>
       <Header title="Admin • Publications" />
@@ -82,9 +111,40 @@ export default function AdminPage() {
 
       <div className="mt-6">
         <Label>Preview</Label>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mt-2">
           {pubs.map((p) => (
-            <div key={p} className="px-3 py-2 rounded-lg bg-[color:var(--card)] border border-[color:var(--border)] text-[color:var(--foreground)]">{p}</div>
+            <div key={p} className="flex items-center justify-between px-3 py-2 rounded-lg bg-[color:var(--card)] border border-[color:var(--border)] text-[color:var(--foreground)]">
+              <span className="flex-1">{p}</span>
+              
+              {deleteConfirm === p ? (
+                <div className="flex items-center gap-2 ml-2">
+                  <span className="text-xs text-red-600">Delete?</span>
+                  <button
+                    onClick={() => deletePub(p)}
+                    disabled={deleting === p}
+                    className="text-xs px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+                    title="Confirm delete"
+                  >
+                    {deleting === p ? "..." : "Yes"}
+                  </button>
+                  <button
+                    onClick={() => setDeleteConfirm(null)}
+                    className="text-xs px-2 py-1 bg-gray-500 text-white rounded hover:bg-gray-600"
+                    title="Cancel"
+                  >
+                    No
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setDeleteConfirm(p)}
+                  className="ml-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded px-1 py-1 transition-colors"
+                  title={`Delete ${p}`}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
           ))}
         </div>
       </div>
