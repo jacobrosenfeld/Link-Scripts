@@ -16,7 +16,7 @@ export async function POST(req: Request) {
   const results = [] as any[];
   for (const pub of pubList) {
     const pubSlug = slugify(pub);
-    const slug = [campaignSlug, dateSlug, pubSlug].filter(Boolean).join("-");
+    const slug = [campaignSlug, pubSlug, dateSlug].filter(Boolean).join("-");
     const { ok, data } = await createShortLink(longUrl, slug, dom);
     results.push({ pub, slug: `${dom}/${slug}`, ok, data });
   }

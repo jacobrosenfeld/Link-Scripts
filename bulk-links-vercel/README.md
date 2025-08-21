@@ -1,6 +1,6 @@
 # Bulk Link Creator (Next.js on Vercel)
 
-Create bulk short links with pattern: `[domain]/[Campaign]-[Date]-[Pub]` using your branded domains.
+Create bulk short links with pattern: `[domain]/[Campaign]-[Pub]-[Date]` using your branded domains.
 
 ## ✨ Key Features
 - **🔐 Secure Login System**: JWT-based authentication with 24-hour sessions
@@ -55,9 +55,9 @@ Create bulk short links with pattern: `[domain]/[Campaign]-[Date]-[Pub]` using y
   - ☀️ **Light**: Light mode
   - 🌙 **Dark**: Dark mode
 
-Each link follows the pattern: `[your-domain]/[Campaign]-[Date]-[Pub]`
+Each link follows the pattern: `[your-domain]/[Campaign]-[Pub]-[Date]`
 
-Example: `adtracking.link/SpringSale-2025-08-21-Facebook`
+Example: `adtracking.link/SpringSale-Facebook-2025-08-21`
 
 ## Technical Features
 - **🗄️ Storage**: Uses Vercel Blob (free tier) for publisher data persistence

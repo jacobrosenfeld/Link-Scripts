@@ -173,7 +173,7 @@ export default function HomePage() {
           </div>
           <div className="md:col-span-2">
             <Label>Preview Pattern</Label>
-            <Input value={`${domain || "adtracking.link"}/[campaign]-[date]-[pub]`} readOnly />
+            <Input value={`${domain || "adtracking.link"}/[campaign]-[pub]-[date]`} readOnly />
           </div>
         </div>
 
