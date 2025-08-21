@@ -52,7 +52,7 @@ export default function AdminPage() {
 
   return (
     <ProtectedLayout>
-      <Header title="Admin • Pubslications" />
+      <Header title="Admin • Publications" />
       
       <div className="mt-4">
         <div className="md:col-span-2">
