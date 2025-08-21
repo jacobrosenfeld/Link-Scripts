@@ -44,4 +44,33 @@ export async function createShortLink(longUrl: string, customSlug: string, domai
   return { ok: false, data: { error: 1, message: "Rate limit: retries exhausted" } };
 }
 
+export async function fetchBrandedDomains(): Promise<{ ok: boolean; domains: string[] }> {
+  try {
+    const resp = await fetch(`${JJA_BASE}/domains?limit=100&page=1`, {
+      headers: {
+        "Authorization": `Bearer ${JJA_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!resp.ok) {
+      console.error("Failed to fetch domains:", resp.status, resp.statusText);
+      return { ok: false, domains: [] };
+    }
+
+    const data = await resp.json();
+    
+    // Extract domain names from the API response
+    // Assuming the API returns { data: [{ domain: "example.com" }, ...] } or similar
+    const domains = Array.isArray(data.data) 
+      ? data.data.map((item: any) => item.domain || item.name || item).filter(Boolean)
+      : [];
+
+    return { ok: true, domains };
+  } catch (error) {
+    console.error("Error fetching branded domains:", error);
+    return { ok: false, domains: [] };
+  }
+}
+
 export { DEFAULT_DOMAIN };

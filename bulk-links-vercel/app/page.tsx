@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { Label, Input, Button } from "@/components/Field";
+import { Label, Input, Button, Select } from "@/components/Field";
 import { ProtectedLayout } from "@/components/ProtectedLayout";
 import { Header } from "@/components/Header";
 
@@ -9,6 +9,8 @@ export default function HomePage() {
   const [campaign, setCampaign] = useState("");
   const [date, setDate] = useState("");
   const [domain, setDomain] = useState("");
+  const [domains, setDomains] = useState<string[]>([]);
+  const [domainsLoading, setDomainsLoading] = useState(true);
   const [pubs, setPubs] = useState<string[]>([]);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
@@ -16,7 +18,20 @@ export default function HomePage() {
 
   useEffect(() => {
     fetch("/api/pubs").then(r => r.json()).then((d) => setPubs(d.pubs || []));
-    fetch("/api/config").then(r => r.json()).then((d) => setDomain(d.defaultDomain));
+    
+    setDomainsLoading(true);
+    fetch("/api/domains").then(r => r.json()).then((d) => {
+      const domainList = d.domains || ["adtracking.link"];
+      setDomains(domainList);
+      setDomain(d.defaultDomain || domainList[0] || "adtracking.link");
+      setDomainsLoading(false);
+    }).catch(() => {
+      // Fallback if domains API fails
+      const fallbackDomain = "adtracking.link";
+      setDomains([fallbackDomain]);
+      setDomain(fallbackDomain);
+      setDomainsLoading(false);
+    });
   }, []);
 
   const selectedList = useMemo(() => Object.keys(selected).filter((k) => selected[k]), [selected]);
@@ -55,9 +70,21 @@ export default function HomePage() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
           <div>
-            <Label>Custom Domain</Label>
-            <Input value={domain} onChange={(e) => setDomain(e.target.value)} />
-            <p className="text-xs text-[color:var(--muted)]">Defaults to your system domain</p>
+            <Label>Domain</Label>
+            <Select value={domain} onChange={(e) => setDomain(e.target.value)} disabled={domainsLoading}>
+              {domainsLoading ? (
+                <option>Loading domains...</option>
+              ) : (
+                domains.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))
+              )}
+            </Select>
+            <p className="text-xs text-[color:var(--muted)]">
+              {domainsLoading ? "Loading your branded domains..." : "Select from your branded domains"}
+            </p>
           </div>
           <div className="md:col-span-2">
             <Label>Preview Pattern</Label>
