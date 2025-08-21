@@ -1,8 +1,8 @@
-"useimport { JJALogoAdaptive } from '../../components/JJALogoAdaptive'client";
+"use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Label, Input, Button } from "@/components/Field";
-import { JJALogo } from "@/components/JJALogo";
+import { JJALogoAdaptive } from "../../components/JJALogoAdaptive";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
