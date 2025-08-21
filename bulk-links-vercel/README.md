@@ -35,8 +35,9 @@ Create bulk short links with pattern: `[domain]/[Campaign]-[Date]-[Pub]` using y
 ### Admin: Configure Publishers
 1. Navigate to Admin Panel (button in top-right header)
 2. Add publishers line-by-line (e.g., `Facebook`, `Google`, `Twitter`)
-3. Save changes
+3. Save changes - **publishers are automatically sorted alphabetically**
 4. Live preview shows how publishers will appear as checkboxes
+5. Navigation: Use "Home" button to return to main link creator
 
 ### Create Bulk Links
 1. **Enter Details**:
@@ -75,6 +76,7 @@ Example: `adtracking.link/SpringSale-2025-08-21-Facebook`
 - **🔄 Adaptive Branding**: Logo switches based on theme (dark/light variants)
 - **📋 Results Table**: Comprehensive status display with clickable links
 - **🎛️ Form Validation**: Required fields and proper input handling
+- **🔤 Auto-Sorting**: Publishers automatically alphabetized on save
 - **♿ Accessibility**: Proper focus states, tooltips, and semantic HTML
 
 ## Company Branding
