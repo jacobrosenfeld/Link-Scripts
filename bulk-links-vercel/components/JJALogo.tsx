@@ -2,10 +2,7 @@ export function JJALogo({ className = "h-8 w-auto" }: { className?: string }) {
   return (
     <svg 
       className={className}
-      id="Layer_1" 
       xmlns="http://www.w3.org/2000/svg" 
-      xmlns:xlink="http://www.w3.org/1999/xlink" 
-      version="1.1" 
       viewBox="0 0 1012.4 1063"
     >
       <defs>
