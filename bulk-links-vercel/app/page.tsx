@@ -94,8 +94,8 @@ export default function HomePage() {
             <table className="w-full text-sm">
               <thead>
                 <tr>
-                  <th className="text-left py-2 border-b border-[color:var(--border)]">Pub</th>
-                  <th className="text-left py-2 border-b border-[color:var(--border)]">Slug</th>
+                  <th className="text-left py-2 border-b border-[color:var(--border)]">Publication</th>
+                  <th className="text-left py-2 border-b border-[color:var(--border)]">URL</th>
                   <th className="text-left py-2 border-b border-[color:var(--border)]">Status</th>
                   <th className="text-left py-2 border-b border-[color:var(--border)]">Details</th>
                 </tr>
