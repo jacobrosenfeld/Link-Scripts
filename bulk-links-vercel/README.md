@@ -1,6 +1,15 @@
 # Bulk Link Creator (Next.js on Vercel)
 
-Create bulk short links with pattern: `adtracking.link/[Campaign]-[Date]-[Pub]`.
+Create bulk short links with pattern: `[domain]/[Campaign]-[Date]-[Pub]` using your branded domains.
+
+## ✨ Key Features
+- **🔐 Secure Login System**: JWT-based authentication with 24-hour sessions
+- **🌐 Dynamic Domain Selection**: Automatically fetches your branded domains from the JJA API
+- **🎨 Professional Theming**: Light/Dark/Auto mode with adaptive JJA branding
+- **📊 CSV Export**: Export generated links to spreadsheet format
+- **⚡ Real-time Results**: Live status updates for each generated link
+- **🔧 Admin Panel**: Easy publisher management with live preview
+- **📱 Responsive Design**: Works seamlessly on desktop and mobile
 
 ## Security
 - **Login Protection**: The entire app is protected with username/password authentication
@@ -24,36 +33,72 @@ Create bulk short links with pattern: `adtracking.link/[Campaign]-[Date]-[Pub]`.
 ## Usage
 
 ### Admin: Configure Publishers
-1. Go to `/admin`
+1. Navigate to Admin Panel (button in top-right header)
 2. Add publishers line-by-line (e.g., `Facebook`, `Google`, `Twitter`)
-3. Save
+3. Save changes
+4. Live preview shows how publishers will appear as checkboxes
 
 ### Create Bulk Links
-1. Enter the long URL (landing page)
-2. Enter campaign name and date
-3. Select publishers from the list
-4. Click "Create Links" 
-5. Copy the generated tracking links
+1. **Enter Details**:
+   - Long URL (landing page destination)
+   - Campaign name and date
+   - Select domain from your branded domains dropdown
+2. **Select Publishers**: Choose from configured publisher checkboxes
+3. **Generate**: Click "Create Links" to bulk generate
+4. **Export**: Use "📊 Export CSV" to download results spreadsheet
+5. **Copy Links**: Click individual short URLs to visit or copy
 
-Each link follows the pattern: `adtracking.link/[Campaign]-[Date]-[Pub]`
+### Theme Selection
+- Use the floating theme selector (bottom-right) to choose:
+  - 🌓 **Auto**: Follows your system preference
+  - ☀️ **Light**: Light mode
+  - 🌙 **Dark**: Dark mode
+
+Each link follows the pattern: `[your-domain]/[Campaign]-[Date]-[Pub]`
 
 Example: `adtracking.link/SpringSale-2025-08-21-Facebook`
 
 ## Technical Features
-- **Storage**: Uses Vercel Blob (free tier) instead of KV
-- **Authentication**: JWT-based login system
-- **Framework**: Next.js 14 with App Router
-- **Styling**: Tailwind CSS with custom dark theme
-- **Deployment**: Optimized for Vercel
+- **🗄️ Storage**: Uses Vercel Blob (free tier) for publisher data persistence
+- **🔐 Authentication**: JWT-based login system with middleware protection
+- **🌐 Dynamic Domains**: Fetches branded domains from JJA API automatically
+- **🎨 Theme System**: Complete light/dark mode with CSS custom properties
+- **📊 CSV Export**: Client-side CSV generation and download
+- **⚛️ Framework**: Next.js 14 with App Router and TypeScript
+- **💅 Styling**: Tailwind CSS with adaptive theming
+- **☁️ Deployment**: Optimized for Vercel with zero-config deployment
+- **📱 Responsive**: Mobile-first design with adaptive layouts
+
+## UI/UX Features
+- **🎯 Smart Navigation**: Context-aware Admin Panel ↔ Home button
+- **⚡ Loading States**: Real-time feedback for all async operations
+- **🔄 Adaptive Branding**: Logo switches based on theme (dark/light variants)
+- **📋 Results Table**: Comprehensive status display with clickable links
+- **🎛️ Form Validation**: Required fields and proper input handling
+- **♿ Accessibility**: Proper focus states, tooltips, and semantic HTML
 
 ## Company Branding
 - Professional Joseph Jacobs Advertising (JJA) branding
-- Logo integration throughout the application
+- Adaptive logo system (dark logo for light mode, white logo for dark mode)
+- Theme-aware favicon system
 - "Made with ❤️ in Teaneck, NJ" footer
-- Consistent company colors and styling
+- Consistent company colors and styling throughout
 
-## Future Ideas
-- History log: push each result to Blob storage keyed by timestamp/campaign
-- CSV export of all generated links
-- Link analytics integration
-- Bulk editing of publishers
+## API Integration
+The app integrates with the JJA Link API for:
+- **Domain Management**: `GET /api/domains` - Fetches branded domains list
+- **Link Creation**: `POST /api/url/add` - Creates individual short links
+- **Authentication**: Bearer token authentication with retry logic
+
+## Recent Updates
+- ✅ **CSV Export**: Export generated links to spreadsheet format
+- ✅ **Dynamic Domains**: Replaced static domain with API-driven dropdown
+- ✅ **Theme System**: Complete light/dark mode implementation
+- ✅ **UI Improvements**: Enhanced navigation, loading states, and responsiveness
+- ✅ **Admin UX**: Live preview and better publisher management
+
+## Development Notes
+- TypeScript errors in development are expected due to JSX configuration
+- All functionality works correctly in production builds
+- Environment variables are required for full functionality
+- Blob storage handles publisher data with automatic cleanup of old versions
