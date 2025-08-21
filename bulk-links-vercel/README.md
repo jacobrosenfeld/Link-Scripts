@@ -1,15 +1,19 @@
 # Bulk Link Creator (Next.js on Vercel)
 
-Create bulk short links with pattern: `[domain]/[Campaign]-[Pub]-[Date]` using your branded domains.
+Create bulk short links with flexible URL patterns using your branded domains. Supports both `[Campaign]-[Pub]-[Date]` and `[Campaign]-[Date]` formats.
 
 ## ✨ Key Features
 - **🔐 Secure Login System**: JWT-based authentication with 24-hour sessions
 - **🌐 Dynamic Domain Selection**: Automatically fetches your branded domains from the JJA API
 - **🎨 Professional Theming**: Light/Dark/Auto mode with adaptive JJA branding
-- **📊 CSV Export**: Export generated links to spreadsheet format
+- **📊 CSV Export**: Export generated links to spreadsheet format with clean column structure
 - **⚡ Real-time Results**: Live status updates for each generated link
 - **🔧 Admin Panel**: Easy publisher management with live preview
 - **📱 Responsive Design**: Works seamlessly on desktop and mobile
+- **🔗 Flexible URL Patterns**: Support for both with-publication and without-publication URL structures
+- **📅 Smart Date Defaults**: Automatically defaults to today's date in MM-DD-YY format
+- **🔍 URL Validation**: Real-time validation with visual feedback for proper URL formatting
+- **⚠️ Smart Confirmations**: User confirmation when creating links without publications
 
 ## Security
 - **Login Protection**: The entire app is protected with username/password authentication
@@ -41,13 +45,29 @@ Create bulk short links with pattern: `[domain]/[Campaign]-[Pub]-[Date]` using y
 
 ### Create Bulk Links
 1. **Enter Details**:
-   - Long URL (landing page destination)
-   - Campaign name and date
+   - Long URL (landing page destination) - **validates in real-time for proper format**
+   - Campaign name (required)
+   - Date - **auto-defaults to today's date in MM-DD-YY format**
    - Select domain from your branded domains dropdown
-2. **Select Publishers**: Choose from configured publisher checkboxes
+2. **Select Publishers**: 
+   - Choose from configured publisher checkboxes (optional)
+   - **Dynamic preview** shows URL pattern based on selection
+   - If no publishers selected, you'll be asked to confirm creating links without publication
 3. **Generate**: Click "Create Links" to bulk generate
 4. **Export**: Use "📊 Export CSV" to download results spreadsheet
 5. **Copy Links**: Click individual short URLs to visit or copy
+
+### URL Pattern Flexibility
+The app supports two URL patterns based on your publisher selection:
+
+**With Publications Selected:**
+- Pattern: `[your-domain]/[Campaign]-[Publication]-[Date]`
+- Example: `adtracking.link/SpringSale-Facebook-08-21-25`
+
+**No Publications Selected:**
+- Pattern: `[your-domain]/[Campaign]-[Date]`
+- Example: `adtracking.link/SpringSale-08-21-25`
+- User confirmation required before generating
 
 ### Theme Selection
 - Use the floating theme selector (bottom-right) to choose:
@@ -55,9 +75,11 @@ Create bulk short links with pattern: `[domain]/[Campaign]-[Pub]-[Date]` using y
   - ☀️ **Light**: Light mode
   - 🌙 **Dark**: Dark mode
 
-Each link follows the pattern: `[your-domain]/[Campaign]-[Pub]-[Date]`
+Each link follows the pattern: `[your-domain]/[Campaign]-[Pub]-[Date]` or `[your-domain]/[Campaign]-[Date]`
 
-Example: `adtracking.link/SpringSale-Facebook-2025-08-21`
+Examples: 
+- With publication: `adtracking.link/SpringSale-Facebook-08-21-25`
+- Without publication: `adtracking.link/SpringSale-08-21-25`
 
 ## Technical Features
 - **🗄️ Storage**: Uses Vercel Blob (free tier) for publisher data persistence
