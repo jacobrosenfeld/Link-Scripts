@@ -3,10 +3,25 @@
 @tailwind utilities;
 
 :root {
+  /* Light mode (default) */
+  --bg: #ffffff;
+  --card: #f8fafc;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --hover: #f1f5f9;
+  --text: #0f172a;
+}
+
+.dark {
+  /* Dark mode */
   --bg: #0b0f14;
   --card: #121a23;
   --muted: #9fb3c8;
   --border: #1f2a36;
+  --hover: #1e293b;
+  --text: #e8eef6;
 }
 
-body { @apply bg-[color:var(--bg)] text-[#e8eef6]; }
+body { 
+  @apply bg-[color:var(--bg)] text-[color:var(--text)] transition-colors duration-200; 
+}

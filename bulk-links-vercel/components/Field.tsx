@@ -9,7 +9,7 @@ export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
     <input
       {...props}
       className={
-        "w-full px-3 py-2 rounded-xl bg-[#0b1219] text-[#e8eef6] border border-[color:var(--border)] focus:outline-none focus:ring-2 focus:ring-blue-500"
+        "w-full px-3 py-2 rounded-xl bg-[color:var(--card)] text-[color:var(--text)] border border-[color:var(--border)] focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-[#0b1219]"
       }
     />
   );
@@ -20,7 +20,7 @@ export function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement
     <textarea
       {...props}
       className={
-        "w-full min-h-[140px] px-3 py-2 rounded-xl bg-[#0b1219] text-[#e8eef6] border border-[color:var(--border)] focus:outline-none focus:ring-2 focus:ring-blue-500"
+        "w-full min-h-[140px] px-3 py-2 rounded-xl bg-[color:var(--card)] text-[color:var(--text)] border border-[color:var(--border)] focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-[#0b1219]"
       }
     />
   );

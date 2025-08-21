@@ -1,6 +1,7 @@
 "use client";
-import { JJALogo } from "./JJALogo";
+import { JJALogoAdaptive } from "./JJALogoAdaptive";
 import { LogoutButton } from "./LogoutButton";
+import { ThemeToggle } from "./ThemeToggle";
 
 interface HeaderProps {
   title: string;
@@ -15,13 +16,16 @@ export function Header({ title, showBackLink = false, backHref = "/", backText =
       {/* Logo and Company */}
       <div className="flex items-center justify-between mb-4 pb-4 border-b border-[color:var(--border)]">
         <div className="flex items-center space-x-3">
-          <JJALogo className="h-10 w-auto" />
+          <JJALogoAdaptive className="h-10 w-auto" />
           <div>
-            <div className="text-lg font-bold text-[#e8eef6]">Joseph Jacobs Advertising</div>
+            <div className="text-lg font-bold text-[color:var(--text)]">Joseph Jacobs Advertising</div>
             <div className="text-sm text-[color:var(--muted)]">Bulk Link Creator</div>
           </div>
         </div>
-        <LogoutButton />
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <LogoutButton />
+        </div>
       </div>
       
       {/* Page Title and Navigation */}
