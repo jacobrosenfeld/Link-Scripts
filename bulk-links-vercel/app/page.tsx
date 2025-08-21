@@ -99,7 +99,7 @@ export default function HomePage() {
     setUrlError(validateUrl(value));
   }
 
-    async function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     
     // Validate URL before submission
@@ -111,6 +111,17 @@ export default function HomePage() {
     
     setLoading(true);
     const selectedList = Object.keys(selected).filter((k) => selected[k]);
+
+    const resp = await fetch("/api/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ longUrl, campaign, date, pubs: selectedList, domain }),
+    });
+
+    const data = await resp.json();
+    setResults(data.results || []);
+    setLoading(false);
+  }
 
   return (
     <ProtectedLayout>
