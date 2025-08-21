@@ -25,6 +25,9 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<any[]>([]);
   const [urlError, setUrlError] = useState<string>("");
+  const [newPubName, setNewPubName] = useState("");
+  const [isAddingPub, setIsAddingPub] = useState(false);
+  const [addingPubLoading, setAddingPubLoading] = useState(false);
 
   useEffect(() => {
     fetch("/api/pubs").then(r => r.json()).then((d) => setPubs(d.pubs || []));
@@ -113,6 +116,31 @@ export default function HomePage() {
     setResults([]);
     setUrlError("");
     setLoading(false);
+  }
+
+  async function addNewPublication() {
+    if (!newPubName.trim()) return;
+    
+    setAddingPubLoading(true);
+    try {
+      const response = await fetch("/api/pubs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pubs: [...pubs, newPubName.trim()] }),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setPubs(data.pubs || []);
+        setNewPubName("");
+        setIsAddingPub(false);
+        // Auto-select the newly added publication
+        setSelected((s) => ({ ...s, [newPubName.trim()]: true }));
+      }
+    } catch (error) {
+      console.error("Failed to add publication:", error);
+    }
+    setAddingPubLoading(false);
   }
 
   function validateUrl(url: string): string {
@@ -235,7 +263,7 @@ export default function HomePage() {
         <div className="mt-4">
           <Label>Select Publications</Label>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-            {pubs.length === 0 && (
+            {pubs.length === 0 && !isAddingPub && (
               <div className="text-sm text-[color:var(--muted)] col-span-full">No publications configured yet. Ask an admin to add some.</div>
             )}
             {arrangedPubs.map((p) => (
@@ -249,6 +277,49 @@ export default function HomePage() {
                 <span>{p}</span>
               </label>
             ))}
+            
+            {/* Add New Publication Box */}
+            {isAddingPub ? (
+              <div className="flex items-center gap-2 bg-[color:var(--card)] border-2 border-dashed border-blue-400 rounded-lg px-3 py-2">
+                <Input
+                  value={newPubName}
+                  onChange={(e) => setNewPubName(e.target.value)}
+                  placeholder="Publication name"
+                  className="!mt-0 !mb-0 flex-1 text-sm"
+                  onKeyPress={(e) => e.key === 'Enter' && addNewPublication()}
+                  disabled={addingPubLoading}
+                />
+                <button
+                  type="button"
+                  onClick={addNewPublication}
+                  disabled={addingPubLoading || !newPubName.trim()}
+                  className="text-green-600 hover:text-green-700 disabled:opacity-50"
+                  title="Save"
+                >
+                  {addingPubLoading ? "⏳" : "✓"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAddingPub(false);
+                    setNewPubName("");
+                  }}
+                  className="text-red-600 hover:text-red-700"
+                  title="Cancel"
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsAddingPub(true)}
+                className="flex items-center justify-center gap-2 bg-[color:var(--card)] border-2 border-dashed border-[color:var(--border)] rounded-lg px-3 py-2 cursor-pointer hover:bg-[color:var(--accent)] hover:border-blue-400 text-[color:var(--muted)] hover:text-blue-600 transition-colors"
+              >
+                <span className="text-lg">+</span>
+                <span className="text-sm">Add Publication</span>
+              </button>
+            )}
           </div>
         </div>
 
