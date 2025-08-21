@@ -1,51 +1,59 @@
-# Bulk## One-time setup
-1. **Create Ve## Security
-- **Login Protection**: The entire app is now protected with username/password authentication
-- JWT-based sessions with 24-hour expiration
-- The public form doesn't expose secrets; all JJA calls run in API route on the server.
-- Additional protection: **Vercel Password Protection** or **Cloudflare Access** can be added for extra security layers. project** → "From Git Repository".
-2. **Add Integration**: *Vercel KV* (Upstash). This auto-populates `KV_REST_API_URL` and `KV_REST_API_TOKEN`.
-3. **Project Env Vars** (Production & Preview):
-- `JJA_API_KEY` – your JJA Link API key
-- `JJA_BASE` – `https://link.josephjacobs.org/api`
-- `DEFAULT_DOMAIN` – `adtracking.link`
-- `AUTH_SECRET` – very long random string (for JWT signing)
-- `LOGIN_USERNAME` – your login username
-- `LOGIN_PASSWORD` – your secure login password
-4. **Deploy**.ator (Next.js on Vercel)
-
+# Bulk Link Creator (Next.js on Vercel)
 
 Create bulk short links with pattern: `adtracking.link/[Campaign]-[Date]-[Pub]`.
 
+## Security
+- **Login Protection**: The entire app is protected with username/password authentication
+- JWT-based sessions with 24-hour expiration
+- The public form doesn't expose secrets; all JJA calls run in API route on the server
+- Additional protection: **Vercel Password Protection** or **Cloudflare Access** can be added for extra security layers
 
 ## One-time setup
-1. **Create Vercel project** → “From Git Repository”.
-2. **Add Integration**: *Vercel KV* (Upstash). This auto-populates `KV_REST_API_URL` and `KV_REST_API_TOKEN`.
-3. **Project Env Vars** (Production & Preview):
-- `JJA_API_KEY` – your JJA Link API key
-- `JJA_BASE` – `https://link.josephjacobs.org/api`
-- `DEFAULT_DOMAIN` – `adtracking.link`
-4. **Deploy**.
+1. **Create Vercel project** → "From Git Repository"
+2. **Add Storage**: Create a *Vercel Blob Store* from your dashboard. This auto-populates `BLOB_READ_WRITE_TOKEN`
+3. **Project Environment Variables** (Production & Preview):
+   - `JJA_API_KEY` – your JJA Link API key
+   - `JJA_BASE` – `https://link.josephjacobs.org/api`
+   - `DEFAULT_DOMAIN` – `adtracking.link`
+   - `AUTH_SECRET` – very long random string (for JWT signing)
+   - `LOGIN_USERNAME` – your login username
+   - `LOGIN_PASSWORD` – your secure login password
+   - `BLOB_READ_WRITE_TOKEN` – (set automatically when you create Blob Store)
+4. **Deploy**
 
+## Usage
 
-## Use
-- **Login**: Go to your deployed URL, you'll be redirected to `/login`
-- Enter your `LOGIN_USERNAME` and `LOGIN_PASSWORD` to access the app
-- **Admin panel**: `/admin`
-- Simply edit pubs (one per line), click **Save Pubs**.
-- **Public form**: `/`
-- Paste **Long URL**, type **Campaign** and **Date**, select pubs via checkboxes, click **Create Links**.
-- **Logout**: Click the "Logout" button in the top-right corner
+### Admin: Configure Publishers
+1. Go to `/admin`
+2. Add publishers line-by-line (e.g., `Facebook`, `Google`, `Twitter`)
+3. Save
 
+### Create Bulk Links
+1. Enter the long URL (landing page)
+2. Enter campaign name and date
+3. Select publishers from the list
+4. Click "Create Links" 
+5. Copy the generated tracking links
 
-## Security
-- The public form doesn’t expose secrets; all JJA calls run in API route on the server.
-- Admin writes require `x-admin-token: ADMIN_TOKEN` header (entered client-side in the Admin page).
-- Optionally front-door protect `/admin` and `/` with **Vercel Password Protection** or **Cloudflare Access** for internal-only access.
+Each link follows the pattern: `adtracking.link/[Campaign]-[Date]-[Pub]`
 
+Example: `adtracking.link/SpringSale-2025-08-21-Facebook`
 
-## Enhancements (optional)
-- Collision auto-suffixing: on conflict, retry `-1`, `-2`, ...
-- CSV export endpoint: `/api/export?campaign=...&date=...` returning a CSV of the last run.
-- History log: push each result to KV list keyed by timestamp/campaign.
-- Per-pub prefixes: store `{ name, prefix }` objects instead of strings and compose `prefix + pub` slugs.
+## Technical Features
+- **Storage**: Uses Vercel Blob (free tier) instead of KV
+- **Authentication**: JWT-based login system
+- **Framework**: Next.js 14 with App Router
+- **Styling**: Tailwind CSS with custom dark theme
+- **Deployment**: Optimized for Vercel
+
+## Company Branding
+- Professional Joseph Jacobs Advertising (JJA) branding
+- Logo integration throughout the application
+- "Made with ❤️ in Teaneck, NJ" footer
+- Consistent company colors and styling
+
+## Future Ideas
+- History log: push each result to Blob storage keyed by timestamp/campaign
+- CSV export of all generated links
+- Link analytics integration
+- Bulk editing of publishers
