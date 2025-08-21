@@ -210,7 +210,7 @@ export default function HomePage() {
               <div className="text-sm text-[color:var(--muted)]">No publications configured yet. Ask an admin to add some.</div>
             )}
             {pubs.map((p) => (
-              <label key={p} className="flex items-center gap-2 bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg px-3 py-2 cursor-pointer hover:bg-[color:var(--accent)] w-48">
+              <label key={p} className="flex items-center gap-2 bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg px-3 py-2 cursor-pointer hover:bg-[color:var(--accent)] w-full sm:w-48 md:w-56 lg:w-64">
                 <input
                   type="checkbox"
                   checked={!!selected[p]}
