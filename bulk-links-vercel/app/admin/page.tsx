@@ -80,7 +80,7 @@ export default function AdminPage() {
         <Label>Preview</Label>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
           {pubs.map((p) => (
-            <div key={p} className="px-3 py-2 rounded-lg bg-[#0b1219] border border-[color:var(--border)]">{p}</div>
+            <div key={p} className="px-3 py-2 rounded-lg bg-[color:var(--card)] border border-[color:var(--border)] text-[color:var(--foreground)]">{p}</div>
           ))}
         </div>
       </div>
