@@ -66,10 +66,10 @@ export default function HomePage() {
         </div>
 
         <div className="mt-4">
-          <Label>Select Pubs</Label>
+          <Label>Select Publications</Label>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             {pubs.length === 0 && (
-              <div className="text-sm text-[color:var(--muted)]">No pubs configured yet. Ask an admin to add some.</div>
+              <div className="text-sm text-[color:var(--muted)]">No publications configured yet. Ask an admin to add some.</div>
             )}
             {pubs.map((p) => (
               <label key={p} className="flex items-center gap-2 bg-[#0b1219] border border-[color:var(--border)] rounded-lg px-3 py-2 cursor-pointer">

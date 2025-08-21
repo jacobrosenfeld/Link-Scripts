@@ -46,7 +46,7 @@ export default function AdminPage() {
 
   return (
     <ProtectedLayout>
-      <Header title="Admin • Pubs" showBackLink={true} backHref="/" backText="Back" />
+      <Header title="Admin • Publications" showBackLink={true} backHref="/" backText="Back" />
       <div className="mt-4">
         <div className="md:col-span-2">
           <Label>Pubs (one per line)</Label>
@@ -55,7 +55,7 @@ export default function AdminPage() {
           
           <div className="mt-4 flex items-center gap-4">
             <Button onClick={save} disabled={loading}>
-              {loading ? "Saving..." : "Save Pubs"}
+              {loading ? "Saving..." : "Save Publications"}
             </Button>
             {saved && <div className="text-sm">{saved}</div>}
           </div>
