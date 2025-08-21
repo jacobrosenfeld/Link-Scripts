@@ -52,11 +52,11 @@ export default function AdminPage() {
 
   return (
     <ProtectedLayout>
-      <Header title="Admin • Pubs" />
+      <Header title="Admin • Pubslications" />
       
       <div className="mt-4">
         <div className="md:col-span-2">
-          <Label>Pubs (one per line)</Label>
+          <Label>Publications (one per line)</Label>
           <Textarea 
             value={raw} 
             onChange={(e) => {
