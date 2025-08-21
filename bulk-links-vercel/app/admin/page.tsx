@@ -267,33 +267,26 @@ export default function AdminPage() {
           {/* Add Publication Feature */}
           <div className="px-3 py-2">
             {isAddingPub ? (
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  placeholder="Publication name"
+              <div className="flex items-center gap-2 bg-[color:var(--card)] border-2 border-dashed border-blue-400 rounded-lg px-3 py-2">
+                <Input
                   value={newPubName}
                   onChange={(e) => setNewPubName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && newPubName.trim()) {
-                      addNewPublication();
-                    } else if (e.key === 'Escape') {
-                      setIsAddingPub(false);
-                      setNewPubName("");
-                    }
-                  }}
-                  className="flex-1 px-2 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Publication name"
+                  className="!mt-0 !mb-0 flex-1 text-sm"
+                  onKeyPress={(e) => e.key === 'Enter' && addNewPublication()}
                   disabled={addingPubLoading}
-                  autoFocus
                 />
                 <button
+                  type="button"
                   onClick={addNewPublication}
                   disabled={addingPubLoading || !newPubName.trim()}
-                  className="text-green-600 hover:text-green-700 disabled:opacity-50 px-1"
-                  title="Add publication"
+                  className="text-green-600 hover:text-green-700 disabled:opacity-50"
+                  title="Save"
                 >
                   {addingPubLoading ? "⏳" : "✓"}
                 </button>
                 <button
+                  type="button"
                   onClick={() => {
                     setIsAddingPub(false);
                     setNewPubName("");
@@ -308,7 +301,7 @@ export default function AdminPage() {
               <button
                 type="button"
                 onClick={() => setIsAddingPub(true)}
-                className="flex items-center justify-center gap-2 bg-[color:var(--card)] border-2 border-dashed border-[color:var(--border)] rounded-lg px-3 py-2 cursor-pointer hover:bg-[color:var(--accent)] hover:border-blue-400 text-[color:var(--muted)] hover:text-blue-600 transition-colors w-full"
+                className="flex items-center justify-center gap-2 bg-[color:var(--card)] border-2 border-dashed border-[color:var(--border)] rounded-lg px-3 py-2 cursor-pointer hover:bg-[color:var(--accent)] hover:border-blue-400 text-[color:var(--muted)] hover:text-blue-600 transition-colors"
               >
                 <span className="text-lg">+</span>
                 <span className="text-sm">Add Publication</span>
