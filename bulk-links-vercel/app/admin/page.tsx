@@ -17,23 +17,7 @@ export default function AdminPage() {
   const [newPubName, setNewPubName] = useState("");
   const [addingPubLoading, setAddingPubLoading] = useState(false);
 
-  // Create column-first arrangement for different screen sizes
-  const arrangeForColumns = (items: string[], numCols: number) => {
-    if (items.length === 0) return [];
-    const itemsPerCol = Math.ceil(items.length / numCols);
-    const arranged = [];
-    
-    for (let i = 0; i < items.length; i++) {
-      const col = Math.floor(i / itemsPerCol);
-      const row = i % itemsPerCol;
-      const newIndex = row * numCols + col;
-      arranged[newIndex] = items[i];
-    }
-    
-    return arranged.filter(Boolean); // Remove any undefined entries
-  };
-
-  const arrangedPubs = useMemo(() => arrangeForColumns(pubs, 4), [pubs]);
+  // No need for arrangeForColumns anymore - we'll use CSS grid-auto-flow: column
 
   async function load() {
     const r = await fetch("/api/pubs");
@@ -204,8 +188,8 @@ export default function AdminPage() {
       
       <div className="mt-6">
         <Label>Publications</Label>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 mt-2">
-          {arrangedPubs.map((p) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 mt-2" style={{ gridAutoFlow: 'column', gridAutoRows: 'min-content' }}>
+          {pubs.map((p) => (
             <div key={p} className="flex items-center justify-between px-3 py-2 rounded-lg bg-[color:var(--card)] border border-[color:var(--border)] text-[color:var(--foreground)]">
               {editingPub === p ? (
                 <div className="flex items-center gap-2 flex-1">

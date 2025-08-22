@@ -54,23 +54,7 @@ export default function HomePage() {
 
   const selectedList = useMemo(() => Object.keys(selected).filter((k) => selected[k]), [selected]);
 
-  // Create column-first arrangement for different screen sizes
-  const arrangeForColumns = (items: string[], numCols: number) => {
-    if (items.length === 0) return [];
-    const itemsPerCol = Math.ceil(items.length / numCols);
-    const arranged = [];
-    
-    for (let i = 0; i < items.length; i++) {
-      const col = Math.floor(i / itemsPerCol);
-      const row = i % itemsPerCol;
-      const newIndex = row * numCols + col;
-      arranged[newIndex] = items[i];
-    }
-    
-    return arranged.filter(Boolean); // Remove any undefined entries
-  };
-
-  const arrangedPubs = useMemo(() => arrangeForColumns(pubs, 4), [pubs]);
+  // No need for arrangeForColumns anymore - we'll use CSS grid-auto-flow: column
 
   function exportToCSV() {
     if (results.length === 0) return;
@@ -295,11 +279,11 @@ export default function HomePage() {
 
         <div className="mt-4">
           <Label>Select Publications</Label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2" style={{ gridAutoFlow: 'column', gridAutoRows: 'min-content' }}>
             {pubs.length === 0 && !isAddingPub && (
               <div className="text-sm text-[color:var(--muted)] col-span-full">No publications configured yet. Ask an admin to add some.</div>
             )}
-            {arrangedPubs.map((p) => (
+            {pubs.map((p) => (
               <label key={p} className="flex items-center gap-2 bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg px-3 py-2 cursor-pointer hover:bg-[color:var(--accent)]">
                 <input
                   type="checkbox"
