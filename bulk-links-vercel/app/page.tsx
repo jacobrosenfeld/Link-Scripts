@@ -30,7 +30,12 @@ export default function HomePage() {
   const [addingPubLoading, setAddingPubLoading] = useState(false);
 
   useEffect(() => {
-    fetch("/api/pubs").then(r => r.json()).then((d) => setPubs(d.pubs || []));
+    fetch("/api/pubs").then(r => r.json()).then((d) => {
+      const pubsData = d.pubs || [];
+      // Sort alphabetically (case-insensitive) for consistent ordering
+      const sortedPubs = pubsData.sort((a: string, b: string) => a.toLowerCase().localeCompare(b.toLowerCase()));
+      setPubs(sortedPubs);
+    });
     
     setDomainsLoading(true);
     fetch("/api/domains").then(r => r.json()).then((d) => {
@@ -125,13 +130,14 @@ export default function HomePage() {
     setAddingPubLoading(true);
     
     try {
-      // Create the new list locally first
+      // Create the new list locally first and sort it
       const newPubsList = [...pubs, trimmedName];
+      const sortedPubs = newPubsList.sort((a: string, b: string) => a.toLowerCase().localeCompare(b.toLowerCase()));
       
       const response = await fetch("/api/pubs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pubs: newPubsList }),
+        body: JSON.stringify({ pubs: sortedPubs }),
       });
       
       if (response.ok) {
@@ -140,10 +146,12 @@ export default function HomePage() {
         
         // Ensure we have the expected data structure
         if (data.pubs && Array.isArray(data.pubs)) {
-          setPubs(data.pubs);
+          // Sort the response data as well to be sure
+          const responseSorted = data.pubs.sort((a: string, b: string) => a.toLowerCase().localeCompare(b.toLowerCase()));
+          setPubs(responseSorted);
         } else {
-          // Fallback to our local list if API response is unexpected
-          setPubs(newPubsList);
+          // Fallback to our sorted local list if API response is unexpected
+          setPubs(sortedPubs);
         }
         
         setNewPubName("");
@@ -153,16 +161,18 @@ export default function HomePage() {
         setSelected((s) => ({ ...s, [trimmedName]: true }));
       } else {
         console.error("Failed to add publication: API response not ok", response.status);
-        // Fallback to optimistic update
-        setPubs([...pubs, trimmedName]);
+        // Fallback to optimistic update with sorted list
+        setPubs(sortedPubs);
         setNewPubName("");
         setIsAddingPub(false);
         setSelected((s) => ({ ...s, [trimmedName]: true }));
       }
     } catch (error) {
       console.error("Failed to add publication:", error);
-      // Fallback to optimistic update
-      setPubs([...pubs, trimmedName]);
+      // Fallback to optimistic update with sorted list
+      const newPubsList = [...pubs, trimmedName];
+      const sortedPubs = newPubsList.sort((a: string, b: string) => a.toLowerCase().localeCompare(b.toLowerCase()));
+      setPubs(sortedPubs);
       setNewPubName("");
       setIsAddingPub(false);
       setSelected((s) => ({ ...s, [trimmedName]: true }));

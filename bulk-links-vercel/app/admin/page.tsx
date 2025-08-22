@@ -39,9 +39,12 @@ export default function AdminPage() {
     const r = await fetch("/api/pubs");
     const d = await r.json();
     console.log("Loaded pubs data:", d);
-    setPubs(d?.pubs || []);
-    setRaw((d?.pubs || []).join("\n"));
-    console.log("Set raw state to:", (d?.pubs || []).join("\n"));
+    const pubsData = d?.pubs || [];
+    // Sort alphabetically (case-insensitive) to match homepage
+    const sortedPubs = pubsData.sort((a: string, b: string) => a.toLowerCase().localeCompare(b.toLowerCase()));
+    setPubs(sortedPubs);
+    setRaw(sortedPubs.join("\n"));
+    console.log("Set raw state to:", sortedPubs.join("\n"));
   }
 
   useEffect(() => { load(); }, []);
@@ -115,17 +118,19 @@ export default function AdminPage() {
 
     const trimmedName = newName.trim();
     const updatedPubs = pubs.map(p => p === oldName ? trimmedName : p);
+    // Sort alphabetically (case-insensitive) to maintain order
+    const sortedPubs = updatedPubs.sort((a: string, b: string) => a.toLowerCase().localeCompare(b.toLowerCase()));
     
     try {
       const r = await fetch("/api/pubs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pubs: updatedPubs })
+        body: JSON.stringify({ pubs: sortedPubs })
       });
       
       if (r.ok) {
-        setPubs(updatedPubs);
-        setRaw(updatedPubs.join("\n"));
+        setPubs(sortedPubs);
+        setRaw(sortedPubs.join("\n"));
         setSaved(`Renamed "${oldName}" to "${trimmedName}" ✔`);
       } else {
         const d = await r.json().catch(() => ({}));
@@ -146,13 +151,14 @@ export default function AdminPage() {
     setAddingPubLoading(true);
     
     try {
-      // Create the new list locally first
+      // Create the new list locally first and sort it
       const newPubsList = [...pubs, trimmedName];
+      const sortedPubs = newPubsList.sort((a: string, b: string) => a.toLowerCase().localeCompare(b.toLowerCase()));
       
       const response = await fetch("/api/pubs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pubs: newPubsList }),
+        body: JSON.stringify({ pubs: sortedPubs }),
       });
       
       if (response.ok) {
@@ -161,10 +167,14 @@ export default function AdminPage() {
         
         // Ensure we have the expected data structure
         if (data.pubs && Array.isArray(data.pubs)) {
-          setPubs(data.pubs);
+          // Sort the response data as well to be sure
+          const responseSorted = data.pubs.sort((a: string, b: string) => a.toLowerCase().localeCompare(b.toLowerCase()));
+          setPubs(responseSorted);
+          setRaw(responseSorted.join("\n"));
         } else {
-          // Fallback to our local list if API response is unexpected
-          setPubs(newPubsList);
+          // Fallback to our sorted local list if API response is unexpected
+          setPubs(sortedPubs);
+          setRaw(sortedPubs.join("\n"));
         }
         
         setNewPubName("");
@@ -172,16 +182,20 @@ export default function AdminPage() {
         setSaved(`Added "${trimmedName}" ✔`);
       } else {
         console.error("Failed to add publication: API response not ok", response.status);
-        // Fallback to optimistic update
-        setPubs([...pubs, trimmedName]);
+        // Fallback to optimistic update with sorted list
+        setPubs(sortedPubs);
+        setRaw(sortedPubs.join("\n"));
         setNewPubName("");
         setIsAddingPub(false);
         setSaved(`Added "${trimmedName}" ✔`);
       }
     } catch (error) {
       console.error("Failed to add publication:", error);
-      // Fallback to optimistic update
-      setPubs([...pubs, trimmedName]);
+      // Fallback to optimistic update with sorted list
+      const newPubsList = [...pubs, trimmedName];
+      const sortedPubs = newPubsList.sort((a: string, b: string) => a.toLowerCase().localeCompare(b.toLowerCase()));
+      setPubs(sortedPubs);
+      setRaw(sortedPubs.join("\n"));
       setNewPubName("");
       setIsAddingPub(false);
       setSaved(`Added "${trimmedName}" ✔`);
