@@ -188,7 +188,7 @@ export default function AdminPage() {
       
       <div className="mt-6">
         <Label>Publications</Label>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 mt-2" style={{ gridAutoFlow: 'column', gridAutoRows: 'min-content' }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mt-2">
           {pubs.map((p) => (
             <div key={p} className="flex items-center justify-between px-3 py-2 rounded-lg bg-[color:var(--card)] border border-[color:var(--border)] text-[color:var(--foreground)]">
               {editingPub === p ? (

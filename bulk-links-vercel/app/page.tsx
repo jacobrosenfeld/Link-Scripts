@@ -279,7 +279,7 @@ export default function HomePage() {
 
         <div className="mt-4">
           <Label>Select Publications</Label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2" style={{ gridAutoFlow: 'column', gridAutoRows: 'min-content' }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
             {pubs.length === 0 && !isAddingPub && (
               <div className="text-sm text-[color:var(--muted)] col-span-full">No publications configured yet. Ask an admin to add some.</div>
             )}
