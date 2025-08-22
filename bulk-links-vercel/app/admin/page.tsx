@@ -80,7 +80,7 @@ export default function AdminPage() {
       if (r.ok) {
         setPubs(updatedPubs);
         setRaw(updatedPubs.join("\n"));
-        setSaved(`Deleted "${pubToDelete}" ✔`);
+        setSaved(`Deleted "${pubToDelete}" ❌`);
       } else {
         const d = await r.json().catch(() => ({}));
         setSaved(`Error deleting: ${d?.message || r.status}`);
