@@ -130,14 +130,13 @@ export default function HomePage() {
     setAddingPubLoading(true);
     
     try {
-      // Create the new list locally first and sort it
+      // Create the new list locally first - add to end, don't sort yet
       const newPubsList = [...pubs, trimmedName];
-      const sortedPubs = newPubsList.sort((a: string, b: string) => a.toLowerCase().localeCompare(b.toLowerCase()));
       
       const response = await fetch("/api/pubs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pubs: sortedPubs }),
+        body: JSON.stringify({ pubs: newPubsList }),
       });
       
       if (response.ok) {
@@ -146,12 +145,10 @@ export default function HomePage() {
         
         // Ensure we have the expected data structure
         if (data.pubs && Array.isArray(data.pubs)) {
-          // Sort the response data as well to be sure
-          const responseSorted = data.pubs.sort((a: string, b: string) => a.toLowerCase().localeCompare(b.toLowerCase()));
-          setPubs(responseSorted);
+          setPubs(data.pubs);
         } else {
-          // Fallback to our sorted local list if API response is unexpected
-          setPubs(sortedPubs);
+          // Fallback to our local list if API response is unexpected
+          setPubs(newPubsList);
         }
         
         setNewPubName("");
@@ -161,18 +158,17 @@ export default function HomePage() {
         setSelected((s) => ({ ...s, [trimmedName]: true }));
       } else {
         console.error("Failed to add publication: API response not ok", response.status);
-        // Fallback to optimistic update with sorted list
-        setPubs(sortedPubs);
+        // Fallback to optimistic update
+        setPubs(newPubsList);
         setNewPubName("");
         setIsAddingPub(false);
         setSelected((s) => ({ ...s, [trimmedName]: true }));
       }
     } catch (error) {
       console.error("Failed to add publication:", error);
-      // Fallback to optimistic update with sorted list
+      // Fallback to optimistic update
       const newPubsList = [...pubs, trimmedName];
-      const sortedPubs = newPubsList.sort((a: string, b: string) => a.toLowerCase().localeCompare(b.toLowerCase()));
-      setPubs(sortedPubs);
+      setPubs(newPubsList);
       setNewPubName("");
       setIsAddingPub(false);
       setSelected((s) => ({ ...s, [trimmedName]: true }));

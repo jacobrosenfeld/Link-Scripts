@@ -118,19 +118,18 @@ export default function AdminPage() {
 
     const trimmedName = newName.trim();
     const updatedPubs = pubs.map(p => p === oldName ? trimmedName : p);
-    // Sort alphabetically (case-insensitive) to maintain order
-    const sortedPubs = updatedPubs.sort((a: string, b: string) => a.toLowerCase().localeCompare(b.toLowerCase()));
+    // Don't sort immediately - let it sort on next load
     
     try {
       const r = await fetch("/api/pubs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pubs: sortedPubs })
+        body: JSON.stringify({ pubs: updatedPubs })
       });
       
       if (r.ok) {
-        setPubs(sortedPubs);
-        setRaw(sortedPubs.join("\n"));
+        setPubs(updatedPubs);
+        setRaw(updatedPubs.join("\n"));
         setSaved(`Renamed "${oldName}" to "${trimmedName}" ✔`);
       } else {
         const d = await r.json().catch(() => ({}));
@@ -151,14 +150,13 @@ export default function AdminPage() {
     setAddingPubLoading(true);
     
     try {
-      // Create the new list locally first and sort it
+      // Create the new list locally first - add to end, don't sort yet
       const newPubsList = [...pubs, trimmedName];
-      const sortedPubs = newPubsList.sort((a: string, b: string) => a.toLowerCase().localeCompare(b.toLowerCase()));
       
       const response = await fetch("/api/pubs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pubs: sortedPubs }),
+        body: JSON.stringify({ pubs: newPubsList }),
       });
       
       if (response.ok) {
@@ -167,14 +165,12 @@ export default function AdminPage() {
         
         // Ensure we have the expected data structure
         if (data.pubs && Array.isArray(data.pubs)) {
-          // Sort the response data as well to be sure
-          const responseSorted = data.pubs.sort((a: string, b: string) => a.toLowerCase().localeCompare(b.toLowerCase()));
-          setPubs(responseSorted);
-          setRaw(responseSorted.join("\n"));
+          setPubs(data.pubs);
+          setRaw(data.pubs.join("\n"));
         } else {
-          // Fallback to our sorted local list if API response is unexpected
-          setPubs(sortedPubs);
-          setRaw(sortedPubs.join("\n"));
+          // Fallback to our local list if API response is unexpected
+          setPubs(newPubsList);
+          setRaw(newPubsList.join("\n"));
         }
         
         setNewPubName("");
@@ -182,20 +178,19 @@ export default function AdminPage() {
         setSaved(`Added "${trimmedName}" ✔`);
       } else {
         console.error("Failed to add publication: API response not ok", response.status);
-        // Fallback to optimistic update with sorted list
-        setPubs(sortedPubs);
-        setRaw(sortedPubs.join("\n"));
+        // Fallback to optimistic update
+        setPubs(newPubsList);
+        setRaw(newPubsList.join("\n"));
         setNewPubName("");
         setIsAddingPub(false);
         setSaved(`Added "${trimmedName}" ✔`);
       }
     } catch (error) {
       console.error("Failed to add publication:", error);
-      // Fallback to optimistic update with sorted list
+      // Fallback to optimistic update
       const newPubsList = [...pubs, trimmedName];
-      const sortedPubs = newPubsList.sort((a: string, b: string) => a.toLowerCase().localeCompare(b.toLowerCase()));
-      setPubs(sortedPubs);
-      setRaw(sortedPubs.join("\n"));
+      setPubs(newPubsList);
+      setRaw(newPubsList.join("\n"));
       setNewPubName("");
       setIsAddingPub(false);
       setSaved(`Added "${trimmedName}" ✔`);
