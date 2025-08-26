@@ -5,6 +5,41 @@ import { Header } from "@/components/Header";
 import { Label, Input, Button, Select } from "@/components/Field";
 
 interface Link {
+    const csvData = [
+      headers.join(','),
+      ...displayedLinks.map((link: any) => [
+        `"${link.description || link.title || ''}"`,
+        `"${link.shorturl}"`,
+        `"${link.longurl}"`,
+        `"${link.campaign}"`,
+        link.clicks.toString(),
+        (link.uniqueClicks || 0).toString(),
+        `"${new Date(link.createdAt).toLocaleDateString()}"`,
+        `"https://link.josephjacobs.org/user/links/${link.id}/edit"`
+      ].join(',')),
+      '',
+      '--- SUMMARY ---',
+      `"Total Links","${currentViewSummary.totalLinks}","","","","","",""`,
+      `"Total Clicks","${currentViewSummary.totalClicks}","","","","","",""`,
+      `"Total Unique Clicks","${currentViewSummary.totalUniqueClicks}","","","","","",""`
+    ].join('\n');
+
+    const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    
+    const campaignName = selectedCampaign !== "all" ? selectedCampaign : searchQuery || "all-links";
+    const today = new Date().toISOString().split('T')[0];
+    link.setAttribute('download', `report-${campaignName}-${today}.csv`);
+    
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+interface Link {
   id: number;
   alias: string;
   shorturl: string;
@@ -64,6 +99,18 @@ export default function ReportsPage() {
   const [sortField, setSortField] = useState<SortField>('createdAt');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [showTable, setShowTable] = useState(false);
+
+  // Column resizing states
+  const [columnWidths, setColumnWidths] = useState({
+    description: 200,
+    shorturl: 200,
+    longurl: 250,
+    campaign: 150,
+    clicks: 120,
+    createdAt: 120,
+    actions: 100
+  });
+  const [isResizing, setIsResizing] = useState<string | null>(null);
 
   // Load all data in background
   useEffect(() => {
@@ -202,7 +249,40 @@ export default function ReportsPage() {
     }
   };
 
-  const exportToCSV = () => {
+  // Column resizing handlers
+  const handleMouseDown = (columnKey: string) => (e: any) => {
+    e.preventDefault();
+    setIsResizing(columnKey);
+    
+    const startX = e.clientX;
+    const startWidth = columnWidths[columnKey as keyof typeof columnWidths];
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = e.clientX - startX;
+      const newWidth = Math.max(80, startWidth + deltaX); // Minimum width of 80px
+      
+      setColumnWidths((prev: any) => ({
+        ...prev,
+        [columnKey]: newWidth
+      }));
+    };
+    
+    const handleMouseUp = () => {
+      setIsResizing(null);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  const openEditLink = (linkId: number) => {
+    const editUrl = `https://link.josephjacobs.org/user/links/${linkId}/edit`;
+    window.open(editUrl, '_blank', 'noopener,noreferrer');
+  };
+
+    const exportToCSV = () => {
     if (!displayedLinks.length) return;
 
     const headers = [
@@ -212,26 +292,29 @@ export default function ReportsPage() {
       'Campaign',
       'Total Clicks',
       'Unique Clicks',
-      'Created At'
+      'Created At',
+      'Edit URL'
     ];
 
     const csvData = [
       headers.join(','),
-      ...displayedLinks.map(link => [
+      ...displayedLinks.map((link: any) => [
         `"${link.description || link.title || ''}"`,
         `"${link.shorturl}"`,
         `"${link.longurl}"`,
         `"${link.campaign}"`,
         link.clicks.toString(),
         (link.uniqueClicks || 0).toString(),
-        `"${new Date(link.createdAt).toLocaleDateString()}"`
+        `"${new Date(link.createdAt).toLocaleDateString()}"`,
+        `"https://link.josephjacobs.org/user/links/${link.id}/edit"`
       ].join(',')),
       '',
       '--- SUMMARY ---',
-      `"Total Links","${currentViewSummary.totalLinks}","","","","",""`,
-      `"Total Clicks","${currentViewSummary.totalClicks}","","","","",""`,
-      `"Total Unique Clicks","${currentViewSummary.totalUniqueClicks}","","","","",""`
-    ].join('\n');
+      `"Total Links","${currentViewSummary.totalLinks}","","","","","",""`,
+      `"Total Clicks","${currentViewSummary.totalClicks}","","","","","",""`,
+      `"Total Unique Clicks","${currentViewSummary.totalUniqueClicks}","","","","","",""`
+    ].join('
+');
 
     const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
@@ -428,76 +511,117 @@ export default function ReportsPage() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full table-fixed">
                   <thead className="bg-gray-50 dark:bg-gray-700">
                     <tr>
                       <th 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                        className="relative px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                        style={{ width: `${columnWidths.description}px` }}
                         onClick={() => handleSort('description')}
                       >
                         Description <SortIcon field="description" />
+                        <div 
+                          className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-500 opacity-0 hover:opacity-100"
+                          onMouseDown={handleMouseDown('description')}
+                        />
                       </th>
                       <th 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                        className="relative px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                        style={{ width: `${columnWidths.shorturl}px` }}
                         onClick={() => handleSort('shorturl')}
                       >
                         Short URL <SortIcon field="shorturl" />
+                        <div 
+                          className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-500 opacity-0 hover:opacity-100"
+                          onMouseDown={handleMouseDown('shorturl')}
+                        />
                       </th>
                       <th 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                        className="relative px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                        style={{ width: `${columnWidths.longurl}px` }}
                         onClick={() => handleSort('longurl')}
                       >
                         Original URL <SortIcon field="longurl" />
+                        <div 
+                          className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-500 opacity-0 hover:opacity-100"
+                          onMouseDown={handleMouseDown('longurl')}
+                        />
                       </th>
                       <th 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                        className="relative px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                        style={{ width: `${columnWidths.campaign}px` }}
                         onClick={() => handleSort('campaign')}
                       >
                         Campaign <SortIcon field="campaign" />
+                        <div 
+                          className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-500 opacity-0 hover:opacity-100"
+                          onMouseDown={handleMouseDown('campaign')}
+                        />
                       </th>
                       <th 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                        className="relative px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                        style={{ width: `${columnWidths.clicks}px` }}
                         onClick={() => handleSort('clicks')}
                       >
                         Clicks <SortIcon field="clicks" />
+                        <div 
+                          className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-500 opacity-0 hover:opacity-100"
+                          onMouseDown={handleMouseDown('clicks')}
+                        />
                       </th>
                       <th 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                        className="relative px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                        style={{ width: `${columnWidths.createdAt}px` }}
                         onClick={() => handleSort('createdAt')}
                       >
                         Created <SortIcon field="createdAt" />
+                        <div 
+                          className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-500 opacity-0 hover:opacity-100"
+                          onMouseDown={handleMouseDown('createdAt')}
+                        />
+                      </th>
+                      <th 
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                        style={{ width: `${columnWidths.actions}px` }}
+                      >
+                        Actions
                       </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {displayedLinks.map((link) => (
+                    {displayedLinks.map((link: any) => (
                       <tr key={link.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                          {link.description || link.title || 'No description'}
+                        <td className="px-6 py-4 text-sm text-gray-900 dark:text-white overflow-hidden">
+                          <div className="truncate" title={link.description || link.title || 'No description'}>
+                            {link.description || link.title || 'No description'}
+                          </div>
                         </td>
-                        <td className="px-6 py-4 text-sm">
+                        <td className="px-6 py-4 text-sm overflow-hidden">
                           <a 
                             href={link.shorturl} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="text-blue-600 dark:text-blue-400 hover:underline"
+                            className="text-blue-600 dark:text-blue-400 hover:underline truncate block"
+                            title={link.shorturl}
                           >
                             {link.shorturl}
                           </a>
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300 max-w-xs truncate">
+                        <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300 overflow-hidden">
                           <a 
                             href={link.longurl} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="hover:underline"
+                            className="hover:underline truncate block"
                             title={link.longurl}
                           >
                             {link.longurl}
                           </a>
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                          {link.campaign}
+                        <td className="px-6 py-4 text-sm text-gray-900 dark:text-white overflow-hidden">
+                          <div className="truncate" title={link.campaign}>
+                            {link.campaign}
+                          </div>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
                           <div>
@@ -509,6 +633,18 @@ export default function ReportsPage() {
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
                           {new Date(link.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 text-sm">
+                          <button
+                            onClick={() => openEditLink(link.id)}
+                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-100 rounded hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800 transition-colors"
+                            title="Edit this link"
+                          >
+                            <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            Edit
+                          </button>
                         </td>
                       </tr>
                     ))}
