@@ -1,6 +1,12 @@
 # Bulk Link Creator (Next.js on Vercel)
 
-Create bulk short links with flexible URL patterns usin## UI/UX Features
+Version: 1.1.0 — Released 2025-08-25
+
+This release combines the URL shortener and bulk link creator into a single Link Creator UI and includes campaign management, CSV export fixes, and improvements to prevent duplicate short-link creation.
+
+Create bulk short links with flexible URL patterns using branded domains. Supports both `[Campaign]-[Pub]-[Date]` and `[Campaign]-[Date]` formats.
+
+## UI/UX Features
 - **🎯 Smart Navigation**: Context-aware Admin Panel ↔ Home button
 - **⚡ Loading States**: Real-time feedback for all async operations
 - **🔄 Adaptive Branding**: Logo switches based on theme (dark/light variants)
@@ -158,7 +164,16 @@ The CSV export includes the following columns in order:
 6. **Original URL** - The long URL that was shortened
 7. **Error** - Error message if link creation failed (empty for successful links)
 
-The CSV file is automatically named with the pattern: `bulk-links-[campaign]-[date].csv`
+The CSV file is automatically named with the pattern: `bulk-links-[campaign]-[date]-[YYYYMMDD-HHMMSS].csv` (timestamp added for uniqueness).
+
+## Release notes (v1.1.0)
+
+See `RELEASE-1.1.0.md` for full release notes. Highlights:
+- Unified Link Creator UI (shortener + bulk creator)
+- Campaign creation now formats names as `[Campaign] - [Date]` and checks for duplicates
+- CSV export uses the actual generated short URLs and a timestamped filename
+- Short URL mode: requests are made unique to avoid server-side duplicate suppression
+- Improved API auth handling and clearer error messages
 
 ## API Integration
 The app integrates with the JJA Link API for:
