@@ -50,6 +50,7 @@ export default function ReportsPage() {
   const [data, setData] = useState<ReportsData | null>(null);
   const [allLinks, setAllLinks] = useState<Link[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState<string>("");
   const [error, setError] = useState<string>("");
   
   // Filter states
@@ -60,10 +61,13 @@ export default function ReportsPage() {
   const [dateTo, setDateTo] = useState<string>("");
   
   // Display states
-  const [displayedLinks, setDisplayedLinks] = useState<Link[]>([]);
   const [sortField, setSortField] = useState<SortField>('createdAt');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [showTable, setShowTable] = useState(false);
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
 
   // Column resizing states
   const [columnWidths, setColumnWidths] = useState({
@@ -82,17 +86,23 @@ export default function ReportsPage() {
     async function loadData() {
       try {
         setLoading(true);
+        setLoadingProgress("Loading campaigns...");
+        
         const response = await fetch('/api/reports?limit=10000');
         if (!response.ok) {
           throw new Error('Failed to fetch reports data');
         }
+        
+        setLoadingProgress("Processing links...");
         const reportsData: ReportsData = await response.json();
         setData(reportsData);
         setAllLinks(reportsData.links);
+        setLoadingProgress("Ready!");
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
         setLoading(false);
+        setLoadingProgress("");
       }
     }
     loadData();
@@ -190,9 +200,20 @@ export default function ReportsPage() {
     };
   }, [filteredAndSortedLinks]);
 
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredAndSortedLinks.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedLinks = filteredAndSortedLinks.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCampaign, searchQuery, minClicks, dateFrom, dateTo, itemsPerPage]);
+
   const runReport = () => {
-    setDisplayedLinks(filteredAndSortedLinks);
     setShowTable(true);
+    setCurrentPage(1); // Reset to first page when running report
   };
 
   const resetFilters = () => {
@@ -202,7 +223,7 @@ export default function ReportsPage() {
     setDateFrom("");
     setDateTo("");
     setShowTable(false);
-    setDisplayedLinks([]);
+    setCurrentPage(1);
   };
 
   const handleSort = (field: SortField) => {
@@ -248,7 +269,7 @@ export default function ReportsPage() {
   };
 
   const exportToCSV = () => {
-    if (!displayedLinks.length) return;
+    if (!filteredAndSortedLinks.length) return;
 
     const headers = [
       'Description',
@@ -263,7 +284,7 @@ export default function ReportsPage() {
 
     const csvData = [
       headers.join(','),
-      ...displayedLinks.map((link: any) => [
+      ...filteredAndSortedLinks.map((link: any) => [
         `"${link.description || link.title || ''}"`,
         `"${link.shorturl}"`,
         `"${link.longurl}"`,
@@ -310,8 +331,18 @@ export default function ReportsPage() {
         <Header title="Link Reports" />
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="flex items-center justify-center h-64">
-            <div className="text-xl text-gray-600 dark:text-gray-300">
-              Loading reports data...
+            <div className="text-center">
+              <div className="text-xl text-gray-600 dark:text-gray-300 mb-4">
+                Loading reports data...
+              </div>
+              {loadingProgress && (
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  {loadingProgress}
+                </div>
+              )}
+              <div className="mt-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -411,7 +442,7 @@ export default function ReportsPage() {
             </div>
           </div>
 
-          <div className="flex gap-4">
+          <div className="flex gap-4 items-center flex-wrap">
             <Button onClick={runReport} className="bg-blue-600 hover:bg-blue-700">
               Run Report ({filteredAndSortedLinks.length} links)
             </Button>
@@ -421,6 +452,23 @@ export default function ReportsPage() {
             >
               Reset Filters
             </Button>
+            
+            {/* Items per page selector */}
+            <div className="flex items-center gap-2">
+              <Label>Links per page:</Label>
+              <Select
+                value={itemsPerPage.toString()}
+                onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                className="w-20"
+              >
+                <option value="10">10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="250">250</option>
+                <option value="500">500</option>
+              </Select>
+            </div>
           </div>
         </div>
 
@@ -553,7 +601,7 @@ export default function ReportsPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {displayedLinks.map((link: any) => (
+                    {paginatedLinks.map((link: any) => (
                       <tr key={link.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                         <td className="px-6 py-4 text-sm text-gray-900 dark:text-white overflow-hidden">
                           <div className="truncate" title={link.description || link.title || 'No description'}>
@@ -615,6 +663,63 @@ export default function ReportsPage() {
                   </tbody>
                 </table>
               </div>
+
+              {/* Pagination Controls */}
+              {filteredAndSortedLinks.length > itemsPerPage && (
+                <div className="flex items-center justify-between px-6 py-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+                  <div className="text-sm text-gray-700 dark:text-gray-300">
+                    Showing {startIndex + 1} to {Math.min(endIndex, filteredAndSortedLinks.length)} of {filteredAndSortedLinks.length} results
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Previous
+                    </button>
+                    
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum;
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else {
+                          if (currentPage <= 3) {
+                            pageNum = i + 1;
+                          } else if (currentPage >= totalPages - 2) {
+                            pageNum = totalPages - 4 + i;
+                          } else {
+                            pageNum = currentPage - 2 + i;
+                          }
+                        }
+                        
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => setCurrentPage(pageNum)}
+                            className={`px-3 py-1 text-sm border rounded ${
+                              currentPage === pageNum
+                                ? 'bg-blue-600 text-white border-blue-600'
+                                : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    
+                    <button
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             )}
           </div>
         )}
