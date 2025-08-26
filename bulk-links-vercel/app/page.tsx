@@ -373,8 +373,6 @@ export default function HomePage() {
         
         const requestBody: any = {
           url: longUrl,
-          name: linkName,
-          description: linkName, // Always use generated form for description
           campaign: campaignId,
           domain: domain,
         };
@@ -382,6 +380,12 @@ export default function HomePage() {
         // Add custom slug only if using generated slugs (Long URL mode)
         if (useGeneratedSlug) {
           requestBody.custom = linkName;
+          requestBody.name = linkName;
+          requestBody.description = linkName;
+        } else {
+          // For Short URL mode without publications
+          requestBody.name = linkName;
+          requestBody.description = linkName;
         }
         
         const response = await fetch("/api/shortener", {
@@ -425,8 +429,6 @@ export default function HomePage() {
           
           const requestBody: any = {
             url: longUrl,
-            name: linkName,
-            description: linkName, // Always use generated form for description
             campaign: campaignId,
             domain: domain,
           };
@@ -434,10 +436,13 @@ export default function HomePage() {
           // Add custom slug only if using generated slugs (Long URL mode)
           if (useGeneratedSlug) {
             requestBody.custom = linkName; // Each publication gets its own unique custom slug
+            requestBody.name = linkName;
+            requestBody.description = linkName;
           } else {
-            // For Short URL mode, add a unique identifier to prevent duplicate detection
-            // since we're not providing custom slugs
-            requestBody.name = `${linkName}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+            // For Short URL mode, ensure each request is unique
+            const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+            requestBody.name = `${linkName}-${uniqueId}`;
+            requestBody.description = `${linkName} for ${pub}`;
           }
           
           console.log(`Creating link for ${pub}:`, requestBody); // Debug what we're sending
@@ -475,6 +480,11 @@ export default function HomePage() {
               shortUrl: null,
               error: errorMessage
             });
+          }
+          
+          // Add a small delay between requests to ensure uniqueness
+          if (selectedList.indexOf(pub) < selectedList.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 100));
           }
         }
       }
