@@ -511,13 +511,13 @@ export default function ReportsPage() {
               <Button 
                 onClick={exportToCSV}
                 className="bg-green-600 hover:bg-green-700"
-                disabled={!displayedLinks.length}
+                disabled={!paginatedLinks.length}
               >
                 Export to CSV
               </Button>
             </div>
 
-            {displayedLinks.length === 0 ? (
+            {paginatedLinks.length === 0 ? (
               <div className="p-8 text-center text-gray-500 dark:text-gray-400">
                 No links match your filters.
               </div>
