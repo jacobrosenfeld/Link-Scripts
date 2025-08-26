@@ -101,5 +101,20 @@ Requirements coverage (from user requests)
 - Filters: campaign dropdown, search bar, min-clicks, and date range. Reports only render when the user clicks "Run Report" to avoid rendering a huge table on load.
 - Background load failures show a retry option; empty-filter results show "No links match your filters." and CSV exports headers + zeroed summary.
 
+---
+
+### 1.2.1 — Navigation & Reports Table Enhancements (2025-08-26)
+
+- Header navigation: added a dedicated "Reports" button next to the existing "Link Creator" item for quick access to the reporting UI.
+- Clickable logo: the header logo now links to the home page ("/") to improve navigation consistency.
+- Report table: added resizable columns (drag handles on headers) with sensible minimum widths and table-fixed layout for consistent rendering.
+- Actions column: added per-row "Edit" button that opens the JJA link editor in a new tab at `https://link.josephjacobs.org/user/links/[id]/edit`.
+- CSV export updated to include the Edit URL column so exported sheets include direct edit links.
+- UX polish: truncation and tooltips for long text, overflow handling, and responsive improvements for the reports table.
+
+Notes:
+- Some TypeScript/JSX diagnostics may appear locally until dev dependencies are installed (`npm install` in `bulk-links-vercel`). These are environment typing issues, not runtime failures.
+- Files added/updated in this patch: `app/reports/page.tsx`, `app/api/reports/route.ts`, `components/Header.tsx`, and release docs.
+
 
 If you want this document in a different filename (e.g., `CHANGELOG.md`) or want a shorter/longer format, tell me which folder and I will add it there.
