@@ -166,8 +166,13 @@ export default function HomePage() {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
+    
+    // Create timestamp for unique filename (YYYY-MM-DD-HHMMSS format)
+    const now = new Date();
+    const timestamp = now.toISOString().replace(/:/g, '').replace(/\..+/, '').replace('T', '-');
+    
     link.setAttribute('href', url);
-    link.setAttribute('download', `bulk-links-${campaign || 'export'}-${date || new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `bulk-links-${campaign || 'export'}-${date || new Date().toISOString().split('T')[0]}-${timestamp}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
