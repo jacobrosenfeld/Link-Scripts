@@ -303,21 +303,23 @@ export default function HomePage() {
         }
         
         // First check if a campaign with this name already exists
+        const campaignWithDate = `${campaign.trim()} - ${date}`;
         const existingCampaign = campaigns.find(c => 
-          c.name.toLowerCase() === campaign.trim().toLowerCase()
+          c.name.toLowerCase() === campaignWithDate.toLowerCase()
         );
         
         if (existingCampaign) {
-          // Use existing campaign
+          // Alert user that campaign already exists and use the existing one
+          alert(`A campaign named "${existingCampaign.name}" already exists. Using the existing campaign instead.`);
           campaignId = existingCampaign.id;
           console.log("Using existing campaign:", existingCampaign.name, "ID:", campaignId);
         } else {
-          // Create new campaign
+          // Create new campaign with date included in the name
           const campaignResponse = await fetch("/api/campaigns", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              name: campaign.trim(),
+              name: campaignWithDate,
               // Skip slug and public to use server defaults
             }),
           });
@@ -331,7 +333,7 @@ export default function HomePage() {
               // Reload campaigns and try to find it
               await loadCampaigns();
               const existingCampaign = campaigns.find(c => 
-                c.name.toLowerCase() === campaign.trim().toLowerCase()
+                c.name.toLowerCase() === campaignWithDate.toLowerCase()
               );
               if (existingCampaign) {
                 campaignId = existingCampaign.id;
@@ -356,7 +358,7 @@ export default function HomePage() {
             }
             
             campaignId = campaignData.id;
-            console.log("Created new campaign:", campaign.trim(), "ID:", campaignId);
+            console.log("Created new campaign:", campaignWithDate, "ID:", campaignId);
             
             // Reload campaigns to update the list
             await loadCampaigns();
