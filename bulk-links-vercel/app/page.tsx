@@ -428,7 +428,6 @@ export default function HomePage() {
           const linkName = `${campaign}${pub ? `-${pub}` : ""}${date ? `-${date}` : ""}`;
           
           const requestBody: any = {
-            url: longUrl,
             campaign: campaignId,
             domain: domain,
           };
@@ -438,9 +437,16 @@ export default function HomePage() {
             requestBody.custom = linkName; // Each publication gets its own unique custom slug
             requestBody.name = linkName;
             requestBody.description = linkName;
+            requestBody.url = longUrl;
           } else {
-            // For Short URL mode, ensure each request is unique
+            // For Short URL mode, make each URL slightly different by adding a unique parameter
+            // This ensures the API sees each request as distinct
             const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+            const urlObj = new URL(longUrl);
+            urlObj.searchParams.set('_pub', pub);
+            urlObj.searchParams.set('_uid', uniqueId);
+            
+            requestBody.url = urlObj.toString();
             requestBody.name = `${linkName}-${uniqueId}`;
             requestBody.description = `${linkName} for ${pub}`;
           }
