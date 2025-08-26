@@ -367,7 +367,11 @@ export default function HomePage() {
         
         const data = await response.json();
         console.log("Link creation response:", data, "Status:", response.status); // Debug log
-        if (data.ok) {
+        
+        // Check if the response was successful
+        const isSuccess = response.ok && data.ok && data.shortUrl;
+        
+        if (isSuccess) {
           results.push({
             pub: "No Publication",
             shortUrl: data.shortUrl,
@@ -375,10 +379,11 @@ export default function HomePage() {
           });
         } else {
           console.error("Link creation failed:", data);
+          const errorMessage = data.message || data.error || `HTTP ${response.status}: ${response.statusText}` || "Failed to create link";
           results.push({
             pub: "No Publication",
             shortUrl: null,
-            error: data.message || data.error || "Failed to create link"
+            error: errorMessage
           });
         }
       } else {
@@ -412,7 +417,11 @@ export default function HomePage() {
           
           const data = await response.json();
           console.log(`Link creation response for ${pub}:`, data, "Status:", response.status); // Debug log
-          if (data.ok) {
+          
+          // Check if the response was successful
+          const isSuccess = response.ok && data.ok && data.shortUrl;
+          
+          if (isSuccess) {
             results.push({
               pub: pub,
               shortUrl: data.shortUrl,
@@ -420,10 +429,11 @@ export default function HomePage() {
             });
           } else {
             console.error(`Link creation failed for ${pub}:`, data);
+            const errorMessage = data.message || data.error || `HTTP ${response.status}: ${response.statusText}` || "Failed to create link";
             results.push({
               pub: pub,
               shortUrl: null,
-              error: data.message || data.error || "Failed to create link"
+              error: errorMessage
             });
           }
         }
