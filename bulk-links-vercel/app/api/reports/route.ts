@@ -12,7 +12,7 @@ interface LinkData {
   title: string;
   description: string;
   date: string;
-  campaign?: string;
+  campaign?: number | string; // Can be campaign ID or name
 }
 
 interface CampaignData {
@@ -110,7 +110,7 @@ export async function GET(req: Request) {
 
           return {
             ...link,
-            campaign: campaignsMap[link.id] || 'No Campaign', // This might need adjustment based on actual API response
+            campaign: (link.campaign && campaignsMap[Number(link.campaign)]) || 'No Campaign',
             uniqueClicks: detailedStats?.uniqueClicks || 0,
             topCountries: detailedStats?.topCountries || {},
             topReferrers: detailedStats?.topReferrers || {},
