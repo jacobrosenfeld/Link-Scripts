@@ -1,17 +1,31 @@
-# Bulk Link Creator (Next.js on Vercel)
+# Bulk Link Creator & Analytics Platform
 
-Version: 1.2.0 — Released 2025-08-25
+**Version 1.2.0** — A powerful Next.js application for creating, managing, and analyzing short links through the JJA Link Shortener API.
 
-This release combines the URL shortener and bulk link creator into a single Link Creator UI and includes campaign management, CSV export fixes, and improvements to prevent duplicate short-link creation.
+## 🚀 Features
 
-Create bulk short links with flexible URL patterns using branded domains. Supports both `[Campaign]-[Pub]-[Date]` and `[Campaign]-[Date]` formats.
+### Link Creation & Management
+- **Bulk Link Creation**: Create multiple short links efficiently with campaign assignment
+- **Domain Selection**: Choose from available domains for your short links
+- **Campaign Organization**: Organize links into campaigns for better tracking
+- **Intuitive Interface**: Clean, responsive UI with dark mode support
 
-## 1.2.0 — Reporting Interface (NEW)
+### 📊 Advanced Reporting & Analytics *(New in v1.2.0)*
+- **Comprehensive Dashboard**: View all links with advanced filtering and pagination
+- **Smart Filtering**: Filter by campaign, search text, date ranges, and click thresholds
+- **Real-time Statistics**: Total links, clicks, unique clicks with live calculations
+- **Professional CSV Export**: Export filtered results with summary statistics
+- **Sortable Columns**: Sort by description, URL, campaign, clicks, or creation date
+- **Resizable Interface**: Drag column borders to customize table layout
+- **Pagination Controls**: Handle large datasets with 10-500 links per page
+- **Direct Link Editing**: Edit links directly in JJA interface from table rows
 
-- Background preloading of all links and campaigns for instant client-side filtering and searching.
-- New reporting page (`/reports`) with sortable table and summary statistics.
-- Support for campaign filter, free-text search, date range, and minimum click filters.
-- CSV export reflects the current filtered/sorted view and includes summary stats.
+### 🎯 User Experience
+- **Progressive Loading**: Background data preloading with status indicators
+- **Responsive Design**: Optimized for desktop, tablet, and mobile devices
+- **Header Navigation**: Intuitive navigation with active page highlighting
+- **Error Handling**: Graceful error states with retry functionality
+- **Authentication**: Secure login system with session management
 
 
 ## UI/UX Features

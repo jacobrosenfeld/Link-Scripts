@@ -1,7 +1,61 @@
 Bulk Links — Changelog
 ======================
 
-This document summarizes the feature work, bug fixes, and ongoing debugging performed in this workspace during the current development session (based on the repository changes and the conversation history).
+This document summarizes the feature work, bug fixes, and ongoing debugging performed in this workspace during the current development session.
+
+## 1.2.1 — Enhanced Table & Navigation (2025-08-26)
+
+### 🎯 Navigation Improvements
+- **Header Navigation**: Added "Reports" link to main navigation with active state highlighting
+- **Clickable Logo**: Logo now functions as home page link for better UX
+- **Active Page Highlighting**: Navigation indicates current page location
+
+### 📊 Table Enhancements  
+- **Resizable Columns**: Drag column borders to customize table layout (minimum 80px width)
+- **Smart Pagination**: Configurable page sizes from 10-500 links per page
+- **Progressive Loading**: Loading indicators with status messages during data fetch
+- **Direct Link Editing**: "Edit" button on each row opens JJA link editor in new tab
+- **Performance Optimization**: Only renders visible rows for better performance with large datasets
+
+### 📈 Data Export Improvements
+- **Complete CSV Export**: Exports ALL filtered results, not just current page
+- **Enhanced CSV Content**: Includes Edit URL column for direct link management
+- **Better File Naming**: Improved filename format with campaign/search context
+
+### 🔧 Technical Fixes
+- **Campaign Mapping**: Fixed server-side campaign mapping using correct API fields
+- **Pagination Logic**: Reset to page 1 when filters change
+- **Syntax Corrections**: Resolved build errors and JSX syntax issues
+- **Memory Efficiency**: Removed unnecessary state variables for better performance
+
+## 1.2.0 — Advanced Reporting Interface (2025-08-25)
+
+### 🚀 Major New Features
+- **Comprehensive Reporting Dashboard**: New `/reports` page with advanced analytics
+- **Background Data Preloading**: All links and campaigns loaded instantly for responsive filtering
+- **Multi-Filter System**: Campaign selection, text search, date ranges, minimum click thresholds
+- **Real-time Summary Statistics**: Live calculations for total links, clicks, and unique clicks
+- **Professional CSV Export**: Export filtered results with summary statistics included
+
+### 📊 Table Features
+- **Sortable Columns**: Click headers to sort by description, URL, campaign, clicks, creation date
+- **Responsive Design**: Optimized table layout for desktop and mobile viewing
+- **Comprehensive Data Display**: Shows description, short URL, original URL, campaign, clicks, creation date
+- **Visual Click Statistics**: Displays both total and unique clicks with clear formatting
+
+### 🎯 User Experience
+- **Run Report Workflow**: Apply filters and click "Run Report" to display results
+- **Filter Persistence**: Maintains filter state until manually reset
+- **Empty State Handling**: Graceful messaging when no results found
+- **Error Recovery**: Retry options for failed data loading
+
+### 🔧 Technical Implementation
+- **Server-side Aggregation**: New `/api/reports` endpoint for data processing
+- **Client-side Filtering**: Instant filter responses using preloaded data
+- **JJA API Integration**: Fetches campaigns, URLs, and detailed link statistics
+- **TypeScript Support**: Proper typing for all data structures
+
+## Previous Development Session Summary
 
 High-level summary
 ------------------
