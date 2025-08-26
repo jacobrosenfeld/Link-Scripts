@@ -1,4 +1,6 @@
 "use client";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { JJALogoAdaptive } from "./JJALogoAdaptive";
 import { LogoutButton } from "./LogoutButton";
 import { AdminButton } from "./AdminButton";
@@ -8,6 +10,8 @@ interface HeaderProps {
 }
 
 export function Header({ title }: HeaderProps) {
+  const pathname = usePathname();
+  
   return (
     <header className="mb-6">
       {/* Logo and Company */}
@@ -16,7 +20,7 @@ export function Header({ title }: HeaderProps) {
           <JJALogoAdaptive className="h-10 w-auto" />
           <div>
             <div className="text-lg font-bold text-[color:var(--text)]">Joseph Jacobs Advertising</div>
-            <div className="text-sm text-[color:var(--muted)]">Bulk Link Creator</div>
+            <div className="text-sm text-[color:var(--muted)]">Link Management System</div>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -24,6 +28,30 @@ export function Header({ title }: HeaderProps) {
           <LogoutButton />
         </div>
       </div>
+      
+      {/* Navigation */}
+      <nav className="flex items-center gap-4 mb-4">
+        <Link 
+          href="/"
+          className={`px-3 py-2 rounded-lg transition-colors ${
+            pathname === '/' 
+              ? 'bg-blue-100 text-blue-800 font-medium' 
+              : 'text-[color:var(--muted)] hover:text-[color:var(--foreground)] hover:bg-[color:var(--accent)]'
+          }`}
+        >
+          Bulk Creator
+        </Link>
+        <Link 
+          href="/shortener"
+          className={`px-3 py-2 rounded-lg transition-colors ${
+            pathname === '/shortener' 
+              ? 'bg-blue-100 text-blue-800 font-medium' 
+              : 'text-[color:var(--muted)] hover:text-[color:var(--foreground)] hover:bg-[color:var(--accent)]'
+          }`}
+        >
+          URL Shortener
+        </Link>
+      </nav>
       
       {/* Page Title */}
       <div className="flex items-center justify-between">
