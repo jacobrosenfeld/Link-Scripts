@@ -17,6 +17,13 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get('session')?.value;
 
   if (!token) {
+    // For API routes, return JSON error instead of redirect
+    if (request.nextUrl.pathname.startsWith('/api/')) {
+      return NextResponse.json(
+        { error: 'Authentication required', code: 'NO_TOKEN' },
+        { status: 401 }
+      );
+    }
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
@@ -24,7 +31,14 @@ export async function middleware(request: NextRequest) {
     await jwtVerify(token, secret);
     return NextResponse.next();
   } catch (error) {
-    // Invalid token, redirect to login
+    // For API routes, return JSON error instead of redirect
+    if (request.nextUrl.pathname.startsWith('/api/')) {
+      return NextResponse.json(
+        { error: 'Invalid or expired session', code: 'INVALID_TOKEN' },
+        { status: 403 }
+      );
+    }
+    // Invalid token, redirect to login for page requests
     return NextResponse.redirect(new URL('/login', request.url));
   }
 }

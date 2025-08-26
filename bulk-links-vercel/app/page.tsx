@@ -74,12 +74,26 @@ export default function HomePage() {
     setCampaignsLoading(true);
     try {
       const response = await fetch("/api/campaigns");
+      
+      // Handle authentication errors
+      if (response.status === 401 || response.status === 403) {
+        alert("Your session has expired. Please refresh the page and log in again.");
+        window.location.reload();
+        return;
+      }
+      
       if (response.ok) {
         const data = await response.json();
         setCampaigns(data.campaigns || []);
       }
     } catch (error) {
       console.error("Failed to load campaigns:", error);
+      
+      // Check if this is an authentication error
+      if (error instanceof SyntaxError && error.message.includes("Unexpected token '<'")) {
+        alert("Your session has expired. Please refresh the page and log in again.");
+        window.location.reload();
+      }
     } finally {
       setCampaignsLoading(false);
     }
@@ -370,7 +384,14 @@ export default function HomePage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(requestBody),
         });
-        
+
+        // Check for authentication errors (403 or redirect to login)
+        if (response.status === 403 || response.url.includes('/login')) {
+          alert("Your session has expired. Please refresh the page and log in again.");
+          window.location.reload();
+          return;
+        }
+
         const data = await response.json();
         console.log("Link creation response:", data, "Status:", response.status); // Debug log
         
@@ -421,7 +442,14 @@ export default function HomePage() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(requestBody),
           });
-          
+
+          // Check for authentication errors (403 or redirect to login)
+          if (response.status === 403 || response.url.includes('/login')) {
+            alert("Your session has expired. Please refresh the page and log in again.");
+            window.location.reload();
+            return;
+          }
+
           const data = await response.json();
           console.log(`Link creation response for ${pub}:`, data, "Status:", response.status); // Debug log
           
@@ -449,7 +477,14 @@ export default function HomePage() {
       setResults(results);
     } catch (error) {
       console.error("Error creating links:", error);
-      alert("An error occurred while creating links. Please try again.");
+      
+      // Check if this is an authentication error
+      if (error instanceof SyntaxError && error.message.includes("Unexpected token '<'")) {
+        alert("Your session has expired. Please refresh the page and log in again.");
+        window.location.reload();
+      } else {
+        alert("An error occurred while creating links. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
