@@ -41,10 +41,7 @@ export default function HomePage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [selectedCampaign, setSelectedCampaign] = useState<number | "">("");
   const [campaignsLoading, setCampaignsLoading] = useState(true);
-  const [showNewCampaign, setShowNewCampaign] = useState(false);
-  const [newCampaignName, setNewCampaignName] = useState("");
-  const [newCampaignSlug, setNewCampaignSlug] = useState("");
-  const [newCampaignPublic, setNewCampaignPublic] = useState(true);
+  const [useGeneratedDescription, setUseGeneratedDescription] = useState(true);
   const [creatingCampaign, setCreatingCampaign] = useState(false);
 
   useEffect(() => {
@@ -89,7 +86,7 @@ export default function HomePage() {
   };
 
   const createNewCampaign = async () => {
-    if (!newCampaignName.trim()) return;
+    if (!campaign.trim()) return;
     
     setCreatingCampaign(true);
     try {
@@ -97,9 +94,9 @@ export default function HomePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: newCampaignName.trim(),
-          slug: newCampaignSlug.trim() || undefined,
-          public: newCampaignPublic,
+          name: campaign.trim(),
+          // Skip slug to auto-generate
+          public: true, // Default to public
         }),
       });
 
@@ -107,11 +104,6 @@ export default function HomePage() {
         const data = await response.json();
         await loadCampaigns(); // Reload campaigns
         setSelectedCampaign(data.campaign.id); // Auto-select the new campaign
-        setCampaign(newCampaignName.trim()); // Set the campaign name in the old field too
-        setShowNewCampaign(false);
-        setNewCampaignName("");
-        setNewCampaignSlug("");
-        setNewCampaignPublic(true);
       } else {
         const errorData = await response.json();
         alert(`Failed to create campaign: ${errorData.error || "Unknown error"}`);
@@ -294,8 +286,7 @@ export default function HomePage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             name: campaign.trim(),
-            slug: newCampaignSlug.trim() || undefined,
-            public: newCampaignPublic,
+            // Skip slug and public to use server defaults
           }),
         });
 
@@ -318,12 +309,16 @@ export default function HomePage() {
       
       if (selectedList.length === 0) {
         // Single link without publication
+        const linkName = `${campaign}${date ? `-${date}` : ""}`;
+        const description = useGeneratedDescription ? linkName : campaign;
+        
         const response = await fetch("/api/shortener", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             originalUrl: longUrl,
-            name: `${campaign}${date ? `-${date}` : ""}`,
+            name: linkName,
+            description: description,
             campaign: campaignId,
             domain: domain,
           }),
@@ -347,6 +342,7 @@ export default function HomePage() {
         // Create links for each selected publication
         for (const pub of selectedList) {
           const linkName = `${campaign}${pub ? `-${pub}` : ""}${date ? `-${date}` : ""}`;
+          const description = useGeneratedDescription ? linkName : campaign;
           
           const response = await fetch("/api/shortener", {
             method: "POST",
@@ -354,6 +350,7 @@ export default function HomePage() {
             body: JSON.stringify({
               originalUrl: longUrl,
               name: linkName,
+              description: description,
               campaign: campaignId,
               domain: domain,
             }),
@@ -443,43 +440,22 @@ export default function HomePage() {
                     onChange={(e) => setCampaign(e.target.value)} 
                     required 
                   />
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowNewCampaign(!showNewCampaign)}
-                      disabled={!campaign.trim()}
-                    >
-                      {showNewCampaign ? "Hide" : "Advanced Options"}
-                    </Button>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="use-generated-description"
+                      checked={useGeneratedDescription}
+                      onChange={(e) => setUseGeneratedDescription(e.target.checked)}
+                      className="rounded border-gray-300"
+                    />
+                    <Label htmlFor="use-generated-description">Use generated form for link description</Label>
                   </div>
-                  
-                  {showNewCampaign && (
-                    <div className="space-y-2 p-3 bg-gray-50 rounded-lg border">
-                      <div>
-                        <Label>Custom Campaign Slug (Optional)</Label>
-                        <Input
-                          placeholder="spring-sale-2024"
-                          value={newCampaignSlug}
-                          onChange={(e) => setNewCampaignSlug(e.target.value)}
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Leave empty to auto-generate from campaign name
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          id="campaign-public"
-                          checked={newCampaignPublic}
-                          onChange={(e) => setNewCampaignPublic(e.target.checked)}
-                          className="rounded border-gray-300"
-                        />
-                        <Label htmlFor="campaign-public">Make campaign public</Label>
-                      </div>
-                    </div>
-                  )}
+                  <p className="text-xs text-gray-500">
+                    {useGeneratedDescription 
+                      ? "Link description will be: Campaign-Publication-Date" 
+                      : "Link description will be just the campaign name"
+                    }
+                  </p>
                 </div>
               )}
             </div>
