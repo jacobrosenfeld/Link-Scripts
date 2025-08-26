@@ -4,6 +4,14 @@ import { Label, Input, Button, Select } from "@/components/Field";
 import { ProtectedLayout } from "@/components/ProtectedLayout";
 import { Header } from "@/components/Header";
 
+interface Campaign {
+  id: number;
+  name: string;
+  public: boolean;
+  rotator: boolean | string;
+  list: string;
+}
+
 export default function HomePage() {
   // Format today's date as MM-DD-YY
   const getTodayFormatted = () => {
@@ -29,6 +37,16 @@ export default function HomePage() {
   const [isAddingPub, setIsAddingPub] = useState(false);
   const [addingPubLoading, setAddingPubLoading] = useState(false);
 
+  // Campaign management
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [selectedCampaign, setSelectedCampaign] = useState<number | "">("");
+  const [campaignsLoading, setCampaignsLoading] = useState(true);
+  const [showNewCampaign, setShowNewCampaign] = useState(false);
+  const [newCampaignName, setNewCampaignName] = useState("");
+  const [newCampaignSlug, setNewCampaignSlug] = useState("");
+  const [newCampaignPublic, setNewCampaignPublic] = useState(true);
+  const [creatingCampaign, setCreatingCampaign] = useState(false);
+
   useEffect(() => {
     fetch("/api/pubs").then(r => r.json()).then((d) => {
       const pubsData = d.pubs || [];
@@ -50,7 +68,61 @@ export default function HomePage() {
       setDomain(fallbackDomain);
       setDomainsLoading(false);
     });
+
+    // Load campaigns
+    loadCampaigns();
   }, []);
+
+  const loadCampaigns = async () => {
+    setCampaignsLoading(true);
+    try {
+      const response = await fetch("/api/campaigns");
+      if (response.ok) {
+        const data = await response.json();
+        setCampaigns(data.campaigns || []);
+      }
+    } catch (error) {
+      console.error("Failed to load campaigns:", error);
+    } finally {
+      setCampaignsLoading(false);
+    }
+  };
+
+  const createNewCampaign = async () => {
+    if (!newCampaignName.trim()) return;
+    
+    setCreatingCampaign(true);
+    try {
+      const response = await fetch("/api/campaigns", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newCampaignName.trim(),
+          slug: newCampaignSlug.trim() || undefined,
+          public: newCampaignPublic,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        await loadCampaigns(); // Reload campaigns
+        setSelectedCampaign(data.campaign.id); // Auto-select the new campaign
+        setCampaign(newCampaignName.trim()); // Set the campaign name in the old field too
+        setShowNewCampaign(false);
+        setNewCampaignName("");
+        setNewCampaignSlug("");
+        setNewCampaignPublic(true);
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to create campaign: ${errorData.error || "Unknown error"}`);
+      }
+    } catch (error) {
+      console.error("Failed to create campaign:", error);
+      alert("Failed to create campaign. Please try again.");
+    } finally {
+      setCreatingCampaign(false);
+    }
+  };
 
   const selectedList = useMemo(() => Object.keys(selected).filter((k) => selected[k]), [selected]);
 
@@ -205,20 +277,117 @@ export default function HomePage() {
       }
     }
 
-    const resp = await fetch("/api/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ longUrl, campaign, date, pubs: selectedList, domain }),
-    });
+    try {
+      let campaignId = selectedCampaign;
+      
+      // If no campaign is selected, create a new one
+      if (selectedCampaign === "") {
+        if (!campaign.trim()) {
+          alert("Please enter a campaign name or select an existing campaign.");
+          setLoading(false);
+          return;
+        }
+        
+        // Create new campaign first
+        const campaignResponse = await fetch("/api/campaigns", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: campaign.trim(),
+            slug: newCampaignSlug.trim() || undefined,
+            public: newCampaignPublic,
+          }),
+        });
 
-    const data = await resp.json();
-    setResults(data.results || []);
-    setLoading(false);
+        if (!campaignResponse.ok) {
+          const errorData = await campaignResponse.json();
+          alert(`Failed to create campaign: ${errorData.error || "Unknown error"}`);
+          setLoading(false);
+          return;
+        }
+
+        const campaignData = await campaignResponse.json();
+        campaignId = campaignData.campaign.id;
+        
+        // Reload campaigns to update the list
+        await loadCampaigns();
+      }
+
+      // Now create the bulk links using the shortener API
+      const results = [];
+      
+      if (selectedList.length === 0) {
+        // Single link without publication
+        const response = await fetch("/api/shortener", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            originalUrl: longUrl,
+            name: `${campaign}${date ? `-${date}` : ""}`,
+            campaign: campaignId,
+            domain: domain,
+          }),
+        });
+        
+        const data = await response.json();
+        if (data.ok) {
+          results.push({
+            pub: "No Publication",
+            shortUrl: data.shortUrl,
+            error: null
+          });
+        } else {
+          results.push({
+            pub: "No Publication",
+            shortUrl: null,
+            error: data.error || "Failed to create link"
+          });
+        }
+      } else {
+        // Create links for each selected publication
+        for (const pub of selectedList) {
+          const linkName = `${campaign}${pub ? `-${pub}` : ""}${date ? `-${date}` : ""}`;
+          
+          const response = await fetch("/api/shortener", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              originalUrl: longUrl,
+              name: linkName,
+              campaign: campaignId,
+              domain: domain,
+            }),
+          });
+          
+          const data = await response.json();
+          if (data.ok) {
+            results.push({
+              pub: pub,
+              shortUrl: data.shortUrl,
+              error: null
+            });
+          } else {
+            results.push({
+              pub: pub,
+              shortUrl: null,
+              error: data.error || "Failed to create link"
+            });
+          }
+        }
+      }
+      
+      setResults(results);
+    } catch (error) {
+      console.error("Error creating links:", error);
+      alert("An error occurred while creating links. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
     <ProtectedLayout>
-      <Header title="Bulk Link Creator" />
+      <Header title="Link Creator with Campaign Management" />
       <form onSubmit={onSubmit} className="mt-4">
         <Label>Long URL</Label>
         <Input 
@@ -237,8 +406,83 @@ export default function HomePage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <Label>Campaign Name</Label>
-            <Input placeholder="Spring Sale" value={campaign} onChange={(e) => setCampaign(e.target.value)} required />
+            <Label>Campaign</Label>
+            <div className="space-y-2">
+              <Select 
+                value={selectedCampaign} 
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setSelectedCampaign(value === "" ? "" : Number(value));
+                  // Update the campaign name when selecting from existing campaigns
+                  if (value !== "") {
+                    const selected = campaigns.find(c => c.id === Number(value));
+                    if (selected) {
+                      setCampaign(selected.name);
+                    }
+                  }
+                }}
+                disabled={campaignsLoading}
+              >
+                <option value="">Create new campaign...</option>
+                {campaignsLoading ? (
+                  <option disabled>Loading campaigns...</option>
+                ) : (
+                  campaigns.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} {!c.public && "(Private)"}
+                    </option>
+                  ))
+                )}
+              </Select>
+              
+              {selectedCampaign === "" && (
+                <div className="space-y-2">
+                  <Input 
+                    placeholder="Campaign Name (e.g., Spring Sale 2024)" 
+                    value={campaign} 
+                    onChange={(e) => setCampaign(e.target.value)} 
+                    required 
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowNewCampaign(!showNewCampaign)}
+                      disabled={!campaign.trim()}
+                    >
+                      {showNewCampaign ? "Hide" : "Advanced Options"}
+                    </Button>
+                  </div>
+                  
+                  {showNewCampaign && (
+                    <div className="space-y-2 p-3 bg-gray-50 rounded-lg border">
+                      <div>
+                        <Label>Custom Campaign Slug (Optional)</Label>
+                        <Input
+                          placeholder="spring-sale-2024"
+                          value={newCampaignSlug}
+                          onChange={(e) => setNewCampaignSlug(e.target.value)}
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Leave empty to auto-generate from campaign name
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="campaign-public"
+                          checked={newCampaignPublic}
+                          onChange={(e) => setNewCampaignPublic(e.target.checked)}
+                          className="rounded border-gray-300"
+                        />
+                        <Label htmlFor="campaign-public">Make campaign public</Label>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
           <div>
             <Label>Date</Label>
