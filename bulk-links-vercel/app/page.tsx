@@ -353,7 +353,7 @@ export default function HomePage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            originalUrl: longUrl,
+            url: longUrl,
             name: linkName,
             description: linkName, // Always use generated form for description
             campaign: campaignId,
@@ -363,6 +363,7 @@ export default function HomePage() {
         });
         
         const data = await response.json();
+        console.log("Link creation response:", data, "Status:", response.status); // Debug log
         if (data.ok) {
           results.push({
             pub: "No Publication",
@@ -370,10 +371,11 @@ export default function HomePage() {
             error: null
           });
         } else {
+          console.error("Link creation failed:", data);
           results.push({
             pub: "No Publication",
             shortUrl: null,
-            error: data.error || "Failed to create link"
+            error: data.message || data.error || "Failed to create link"
           });
         }
       } else {
@@ -385,7 +387,7 @@ export default function HomePage() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              originalUrl: longUrl,
+              url: longUrl,
               name: linkName,
               description: linkName, // Always use generated form for description
               campaign: campaignId,
@@ -395,6 +397,7 @@ export default function HomePage() {
           });
           
           const data = await response.json();
+          console.log(`Link creation response for ${pub}:`, data, "Status:", response.status); // Debug log
           if (data.ok) {
             results.push({
               pub: pub,
@@ -402,10 +405,11 @@ export default function HomePage() {
               error: null
             });
           } else {
+            console.error(`Link creation failed for ${pub}:`, data);
             results.push({
               pub: pub,
               shortUrl: null,
-              error: data.error || "Failed to create link"
+              error: data.message || data.error || "Failed to create link"
             });
           }
         }
