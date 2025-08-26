@@ -260,7 +260,7 @@ export default function ReportsPage() {
   if (loading) {
     return (
       <ProtectedLayout>
-        <Header />
+        <Header title="Link Reports" />
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="flex items-center justify-center h-64">
             <div className="text-xl text-gray-600 dark:text-gray-300">
@@ -275,7 +275,7 @@ export default function ReportsPage() {
   if (error) {
     return (
       <ProtectedLayout>
-        <Header />
+        <Header title="Link Reports" />
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
             <h3 className="text-lg font-medium text-red-800 dark:text-red-200 mb-2">
@@ -296,17 +296,8 @@ export default function ReportsPage() {
 
   return (
     <ProtectedLayout>
-      <Header />
+      <Header title="Link Reports" />
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Link Reports
-          </h1>
-          <p className="text-gray-600 dark:text-gray-300">
-            Filter and analyze your link performance data
-          </p>
-        </div>
-
         {/* Filters Section */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
