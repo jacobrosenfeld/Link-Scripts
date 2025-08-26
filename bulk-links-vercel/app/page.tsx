@@ -132,10 +132,10 @@ export default function HomePage() {
         r.pub || '',
         campaign || '',
         date || '',
-        r.slug || '',
-        r.ok ? 'Success' : 'Error',
+        r.shortUrl || '',  // Use shortUrl instead of slug
+        r.shortUrl ? 'Success' : 'Error',  // Check shortUrl instead of r.ok
         longUrl || '',
-        r.ok ? '' : (r.data?.message || r.data?.error || 'Unknown error')
+        r.shortUrl ? '' : (r.error || 'Unknown error')  // Use r.error instead of nested data
       ].map(field => {
         // Escape quotes and wrap in quotes if contains comma, quote, or newline
         const escaped = String(field).replace(/"/g, '""');
@@ -247,6 +247,9 @@ export default function HomePage() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    
+    // Clear previous results when starting a new submission
+    setResults([]);
     
     // Validate URL before submission
     const urlValidationError = validateUrl(longUrl);
@@ -666,15 +669,17 @@ export default function HomePage() {
                 {results.map((r: any, idx: number) => (
                   <tr key={idx} className="align-top">
                     <td className="py-2 border-b border-[color:var(--border)]">{r.pub}</td>
-                    <td className="py-2 border-b border-[color:var(--border)]"><code>{r.slug}</code></td>
                     <td className="py-2 border-b border-[color:var(--border)]">
-                      {r.ok ? <span className="text-green-400 font-semibold">Created</span> : <span className="text-red-400 font-semibold">Error</span>}
+                      <code>{r.shortUrl || 'N/A'}</code>
                     </td>
                     <td className="py-2 border-b border-[color:var(--border)]">
-                      {r.ok && r.data?.short ? (
-                        <a href={r.data.short} target="_blank" className="text-blue-300 underline">{r.data.short}</a>
+                      {r.shortUrl ? <span className="text-green-400 font-semibold">Created</span> : <span className="text-red-400 font-semibold">Error</span>}
+                    </td>
+                    <td className="py-2 border-b border-[color:var(--border)]">
+                      {r.shortUrl ? (
+                        <a href={r.shortUrl} target="_blank" className="text-blue-300 underline">{r.shortUrl}</a>
                       ) : (
-                        <span className="text-[color:var(--muted)]">{r.data?.message || r.data?.error || ""}</span>
+                        <span className="text-[color:var(--muted)]">{r.error || "Unknown error"}</span>
                       )}
                     </td>
                   </tr>
