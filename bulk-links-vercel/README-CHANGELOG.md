@@ -91,4 +91,15 @@ Requirements coverage (from user requests)
 - Do not force `metatitle` uniqueness: Reverted per user request.
 - Campaign name should be `[Campaign] - [Date]` and check for duplicates: Done with alert and fallback to existing campaign.
 
+---
+
+### 1.2.0 — Reporting Interface (2025-08-25)
+
+- Added a Reporting UI at `/reports` that preloads all links and campaigns in the background and performs client-side filtering and searching.
+- Report table is sortable and includes Description, Short URL, Original URL, Campaign, Clicks, and Created At.
+- CSV export now mirrors the current filtered/sorted view and contains a summary section.
+- Filters: campaign dropdown, search bar, min-clicks, and date range. Reports only render when the user clicks "Run Report" to avoid rendering a huge table on load.
+- Background load failures show a retry option; empty-filter results show "No links match your filters." and CSV exports headers + zeroed summary.
+
+
 If you want this document in a different filename (e.g., `CHANGELOG.md`) or want a shorter/longer format, tell me which folder and I will add it there.

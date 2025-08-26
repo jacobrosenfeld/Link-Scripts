@@ -1,10 +1,18 @@
 # Bulk Link Creator (Next.js on Vercel)
 
-Version: 1.1.0 — Released 2025-08-25
+Version: 1.2.0 — Released 2025-08-25
 
 This release combines the URL shortener and bulk link creator into a single Link Creator UI and includes campaign management, CSV export fixes, and improvements to prevent duplicate short-link creation.
 
 Create bulk short links with flexible URL patterns using branded domains. Supports both `[Campaign]-[Pub]-[Date]` and `[Campaign]-[Date]` formats.
+
+## 1.2.0 — Reporting Interface (NEW)
+
+- Background preloading of all links and campaigns for instant client-side filtering and searching.
+- New reporting page (`/reports`) with sortable table and summary statistics.
+- Support for campaign filter, free-text search, date range, and minimum click filters.
+- CSV export reflects the current filtered/sorted view and includes summary stats.
+
 
 ## UI/UX Features
 - **🎯 Smart Navigation**: Context-aware Admin Panel ↔ Home button
