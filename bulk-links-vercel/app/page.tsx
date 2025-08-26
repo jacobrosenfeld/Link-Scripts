@@ -272,7 +272,7 @@ export default function HomePage() {
     try {
       let campaignId = selectedCampaign;
       
-      // If no campaign is selected, create a new one
+      // If no campaign is selected, find existing or create new one
       if (selectedCampaign === "") {
         if (!campaign.trim()) {
           alert("Please enter a campaign name or select an existing campaign.");
@@ -280,37 +280,66 @@ export default function HomePage() {
           return;
         }
         
-        // Create new campaign first
-        const campaignResponse = await fetch("/api/campaigns", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: campaign.trim(),
-            // Skip slug and public to use server defaults
-          }),
-        });
+        // First check if a campaign with this name already exists
+        const existingCampaign = campaigns.find(c => 
+          c.name.toLowerCase() === campaign.trim().toLowerCase()
+        );
+        
+        if (existingCampaign) {
+          // Use existing campaign
+          campaignId = existingCampaign.id;
+          console.log("Using existing campaign:", existingCampaign.name, "ID:", campaignId);
+        } else {
+          // Create new campaign
+          const campaignResponse = await fetch("/api/campaigns", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: campaign.trim(),
+              // Skip slug and public to use server defaults
+            }),
+          });
 
-        if (!campaignResponse.ok) {
-          const errorData = await campaignResponse.json();
-          alert(`Failed to create campaign: ${errorData.error || "Unknown error"}`);
-          setLoading(false);
-          return;
+          const campaignData = await campaignResponse.json();
+          console.log("Campaign creation response:", campaignData); // Debug log
+          
+          if (!campaignResponse.ok) {
+            // Handle the case where campaign already exists (race condition)
+            if (campaignData.error && campaignData.error.includes("already have a campaign")) {
+              // Reload campaigns and try to find it
+              await loadCampaigns();
+              const existingCampaign = campaigns.find(c => 
+                c.name.toLowerCase() === campaign.trim().toLowerCase()
+              );
+              if (existingCampaign) {
+                campaignId = existingCampaign.id;
+                console.log("Found existing campaign after reload:", existingCampaign.name);
+              } else {
+                alert("Campaign already exists but couldn't be found. Please refresh and try again.");
+                setLoading(false);
+                return;
+              }
+            } else {
+              alert(`Failed to create campaign: ${campaignData.error || "Unknown error"}`);
+              setLoading(false);
+              return;
+            }
+          } else {
+            // Successfully created new campaign
+            if (!campaignData || !campaignData.id) {
+              console.error("Invalid campaign response structure:", campaignData);
+              alert("Failed to create campaign: Invalid response from server");
+              setLoading(false);
+              return;
+            }
+            
+            campaignId = campaignData.id;
+            console.log("Created new campaign:", campaign.trim(), "ID:", campaignId);
+            
+            // Reload campaigns to update the list
+            await loadCampaigns();
+          }
         }
-
-        const campaignData = await campaignResponse.json();
-        console.log("Campaign creation response:", campaignData); // Debug log
-        
-        if (!campaignData || !campaignData.id) {
-          console.error("Invalid campaign response structure:", campaignData);
-          alert("Failed to create campaign: Invalid response from server");
-          setLoading(false);
-          return;
-        }
-        
-        campaignId = campaignData.id;
-        
-        // Reload campaigns to update the list
-        await loadCampaigns();
       }
 
       // Now create the bulk links using the shortener API
