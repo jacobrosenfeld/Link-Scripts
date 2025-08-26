@@ -7,7 +7,7 @@ export function Footer() {
         Made with ❤️ in Teaneck, NJ
       </div>
       <div className="text-xs text-[color:var(--muted)]">
-        Copyright {currentYear} Joseph Jacobs Advertising
+        © {currentYear} Joseph Jacobs Advertising
       </div>
       <div className="text-xs">
         <a 
