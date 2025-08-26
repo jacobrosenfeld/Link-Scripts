@@ -352,17 +352,23 @@ export default function HomePage() {
         // Single link without publication
         const linkName = `${campaign}${date ? `-${date}` : ""}`;
         
+        const requestBody: any = {
+          url: longUrl,
+          name: linkName,
+          description: linkName, // Always use generated form for description
+          campaign: campaignId,
+          domain: domain,
+        };
+        
+        // Add custom slug only if using generated slugs (Long URL mode)
+        if (useGeneratedSlug) {
+          requestBody.custom = linkName;
+        }
+        
         const response = await fetch("/api/shortener", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            url: longUrl,
-            name: linkName,
-            description: linkName, // Always use generated form for description
-            campaign: campaignId,
-            domain: domain,
-            ...(useGeneratedSlug && { custom: linkName }), // Only add custom slug if checkbox is checked
-          }),
+          body: JSON.stringify(requestBody),
         });
         
         const data = await response.json();
@@ -391,19 +397,20 @@ export default function HomePage() {
         for (const pub of selectedList) {
           const linkName = `${campaign}${pub ? `-${pub}` : ""}${date ? `-${date}` : ""}`;
           
-          const requestBody = {
+          const requestBody: any = {
             url: longUrl,
             name: linkName,
             description: linkName, // Always use generated form for description
             campaign: campaignId,
             domain: domain,
-            ...(useGeneratedSlug ? { custom: linkName } : {}), // Only add custom slug if checkbox is checked
           };
           
-          // If not using generated slugs, we still need to ensure uniqueness somehow
-          // The API might be detecting duplicates without a differentiating factor
-          if (!useGeneratedSlug) {
-            // Add a unique identifier to prevent duplicate detection
+          // Add custom slug only if using generated slugs (Long URL mode)
+          if (useGeneratedSlug) {
+            requestBody.custom = linkName; // Each publication gets its own unique custom slug
+          } else {
+            // For Short URL mode, add a unique identifier to prevent duplicate detection
+            // since we're not providing custom slugs
             requestBody.name = `${linkName}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
           }
           

@@ -63,7 +63,8 @@ export async function POST(req: Request) {
     const data = await response.json();
 
     if (response.ok && (data.error === 0 || data.error === "0" || data.error === undefined)) {
-      const shortUrl = data.short || data.url || `${domain || 'adtracking.link'}/${custom || data.id}`;
+      // Use the actual shorturl from the API response, fallback to constructed URL only if needed
+      const shortUrl = data.shorturl || data.short || data.url || `${domain || 'adtracking.link'}/${custom || data.id}`;
       
       return NextResponse.json({
         ok: true,
