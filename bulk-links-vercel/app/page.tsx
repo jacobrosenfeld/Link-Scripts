@@ -103,7 +103,7 @@ export default function HomePage() {
       if (response.ok) {
         const data = await response.json();
         await loadCampaigns(); // Reload campaigns
-        setSelectedCampaign(data.campaign.id); // Auto-select the new campaign
+        setSelectedCampaign(data.id); // Auto-select the new campaign
       } else {
         const errorData = await response.json();
         alert(`Failed to create campaign: ${errorData.error || "Unknown error"}`);
@@ -298,7 +298,16 @@ export default function HomePage() {
         }
 
         const campaignData = await campaignResponse.json();
-        campaignId = campaignData.campaign.id;
+        console.log("Campaign creation response:", campaignData); // Debug log
+        
+        if (!campaignData || !campaignData.id) {
+          console.error("Invalid campaign response structure:", campaignData);
+          alert("Failed to create campaign: Invalid response from server");
+          setLoading(false);
+          return;
+        }
+        
+        campaignId = campaignData.id;
         
         // Reload campaigns to update the list
         await loadCampaigns();
