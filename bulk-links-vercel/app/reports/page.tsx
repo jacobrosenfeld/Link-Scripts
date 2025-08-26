@@ -5,41 +5,6 @@ import { Header } from "@/components/Header";
 import { Label, Input, Button, Select } from "@/components/Field";
 
 interface Link {
-    const csvData = [
-      headers.join(','),
-      ...displayedLinks.map((link: any) => [
-        `"${link.description || link.title || ''}"`,
-        `"${link.shorturl}"`,
-        `"${link.longurl}"`,
-        `"${link.campaign}"`,
-        link.clicks.toString(),
-        (link.uniqueClicks || 0).toString(),
-        `"${new Date(link.createdAt).toLocaleDateString()}"`,
-        `"https://link.josephjacobs.org/user/links/${link.id}/edit"`
-      ].join(',')),
-      '',
-      '--- SUMMARY ---',
-      `"Total Links","${currentViewSummary.totalLinks}","","","","","",""`,
-      `"Total Clicks","${currentViewSummary.totalClicks}","","","","","",""`,
-      `"Total Unique Clicks","${currentViewSummary.totalUniqueClicks}","","","","","",""`
-    ].join('\n');
-
-    const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    
-    const campaignName = selectedCampaign !== "all" ? selectedCampaign : searchQuery || "all-links";
-    const today = new Date().toISOString().split('T')[0];
-    link.setAttribute('download', `report-${campaignName}-${today}.csv`);
-    
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-interface Link {
   id: number;
   alias: string;
   shorturl: string;
@@ -282,7 +247,7 @@ export default function ReportsPage() {
     window.open(editUrl, '_blank', 'noopener,noreferrer');
   };
 
-    const exportToCSV = () => {
+  const exportToCSV = () => {
     if (!displayedLinks.length) return;
 
     const headers = [
@@ -313,8 +278,7 @@ export default function ReportsPage() {
       `"Total Links","${currentViewSummary.totalLinks}","","","","","",""`,
       `"Total Clicks","${currentViewSummary.totalClicks}","","","","","",""`,
       `"Total Unique Clicks","${currentViewSummary.totalUniqueClicks}","","","","","",""`
-    ].join('
-');
+    ].join('\n');
 
     const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
