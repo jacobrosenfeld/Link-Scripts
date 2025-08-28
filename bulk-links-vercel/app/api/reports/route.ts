@@ -112,29 +112,47 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '100'); // Back to original 100
+    const limit = parseInt(searchParams.get('limit') || '50'); // Reduced to 50 to prevent timeout
     
     console.log(`🔍 API Request - Page: ${page}, Limit: ${limit}`);
     
     // Fetch campaigns map (cached)
     const campaignsMap = await getCampaignsMap();
 
-    // Fetch links for this page only
-    const response = await fetch(`${JJA_BASE}/urls?limit=${limit}&page=${page}&order=date`, {
-      headers: {
-        "Authorization": `Bearer ${JJA_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-    });
+    // Fetch links for this page only (with timeout)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    
+    let data;
+    try {
+      const response = await fetch(`${JJA_BASE}/urls?limit=${limit}&page=${page}&order=date`, {
+        headers: {
+          "Authorization": `Bearer ${JJA_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
 
-    if (!response.ok) {
-      return NextResponse.json(
-        { error: `Failed to fetch links: ${response.status}` },
-        { status: response.status }
-      );
+      if (!response.ok) {
+        return NextResponse.json(
+          { error: `Failed to fetch links: ${response.status}` },
+          { status: response.status }
+        );
+      }
+
+      data = await response.json();
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        return NextResponse.json(
+          { error: 'Request timeout - try reducing the page size' },
+          { status: 504 }
+        );
+      }
+      throw error;
     }
-
-    const data = await response.json();
     
     if (data.error !== 0 && data.error !== "0") {
       return NextResponse.json(
@@ -162,9 +180,9 @@ export async function GET(req: Request) {
       console.log('🔍 Available campaigns map:', Object.keys(campaignsMap).length, 'campaigns');
     }
     
-    // Enhance links with campaign names and unique clicks (simple approach)
-    console.log(`🚀 Processing ${links.length} links with unique clicks data`);
-    const enhancedLinks = await Promise.all(links.map(async (link) => {
+    // Enhance links with campaign names (skip unique clicks for now to avoid timeouts)
+    console.log(`🚀 Processing ${links.length} links (skipping unique clicks to prevent timeout)`);
+    const enhancedLinks = links.map((link) => {
       // Get campaign name from the campaign ID in the link data
       let campaignName = 'No Campaign';
       
@@ -178,24 +196,13 @@ export async function GET(req: Request) {
         }
       }
 
-      // Try to fetch unique clicks, but don't fail if it doesn't work
-      let uniqueClicks = 0;
-      try {
-        console.log(`🔄 Fetching unique clicks for link ${link.id} (${link.alias})`);
-        uniqueClicks = await getUniqueClicksForLink(link.id);
-        console.log(`📈 Got ${uniqueClicks} unique clicks for link ${link.id}`);
-      } catch (error) {
-        console.error(`❌ Failed to get unique clicks for link ${link.id}:`, error);
-        // Continue without unique clicks data
-      }
-      
       return {
         ...link,
         campaign: campaignName,
-        uniqueClicks,
+        uniqueClicks: 0, // Set to 0 for now to avoid timeout
         createdAt: link.date,
       };
-    }));
+    });
 
     // Calculate quick summary stats for this page
     const totalClicks = enhancedLinks.reduce((sum, link) => sum + link.clicks, 0);

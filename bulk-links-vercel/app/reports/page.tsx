@@ -125,7 +125,7 @@ export default function ReportsPage() {
         let allLoadedLinks: Link[] = [];
         
         while (hasMorePages && isMounted && !signal.aborted) {
-          const linksResponse = await fetch(`/api/reports?limit=100&page=${currentPage}`, { signal });
+          const linksResponse = await fetch(`/api/reports?limit=50&page=${currentPage}`, { signal });
           
           if (!linksResponse.ok) {
             throw new Error(`HTTP ${linksResponse.status}: ${linksResponse.statusText}`);
@@ -146,7 +146,7 @@ export default function ReportsPage() {
               loadedCount: allLoadedLinks.length,
               totalCount: data.summary?.totalLinks || allLoadedLinks.length,
               currentPage: currentPage,
-              isComplete: !data.pagination?.hasNextPage || newLinks.length < 100
+              isComplete: !data.pagination?.hasNextPage || newLinks.length < 50
             }));
             
             // Small delay to show progressive loading (remove in production if too slow)
@@ -154,7 +154,7 @@ export default function ReportsPage() {
           }
           
           // Check if we have more pages
-          hasMorePages = data.pagination?.hasNextPage && newLinks.length === 100;
+          hasMorePages = data.pagination?.hasNextPage && newLinks.length === 50;
           currentPage++;
           
           // Safety limit to prevent infinite loops
