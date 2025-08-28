@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { ProtectedLayout } from "@/components/ProtectedLayout";
 import { Header } from "@/components/Header";
 import { Label, Input, Button, Select } from "@/components/Field";
@@ -30,28 +30,31 @@ interface Summary {
   clicksByUrl: Record<string, { title: string; clicks: number; uniqueClicks: number }>;
 }
 
-interface ReportsData {
-  links: Link[];
-  summary: Summary;
-  campaigns: Campaign[];
-  pagination: {
-    page: number;
-    limit: number;
-    totalPages: number;
-    hasNextPage: boolean;
-    hasPrevPage: boolean;
-  };
-}
-
 type SortField = 'description' | 'shorturl' | 'longurl' | 'campaign' | 'clicks' | 'createdAt';
 type SortDirection = 'asc' | 'desc';
 
+interface LoadingState {
+  isLoading: boolean;
+  loadedCount: number;
+  totalCount: number;
+  currentPage: number;
+  isComplete: boolean;
+  error?: string;
+}
+
 export default function ReportsPage() {
-  const [data, setData] = useState<ReportsData | null>(null);
+  // Progressive loading states
   const [allLinks, setAllLinks] = useState<Link[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingProgress, setLoadingProgress] = useState<string>("");
+  const [allCampaigns, setAllCampaigns] = useState<Campaign[]>([]);
+  const [loadingState, setLoadingState] = useState<LoadingState>({
+    isLoading: false,
+    loadedCount: 0,
+    totalCount: 0,
+    currentPage: 0,
+    isComplete: false
+  });
   const [error, setError] = useState<string>("");
+  const abortControllerRef = useRef<AbortController | null>(null);
   
   // Filter states
   const [selectedCampaign, setSelectedCampaign] = useState<string>("all");
@@ -61,72 +64,136 @@ export default function ReportsPage() {
   const [dateTo, setDateTo] = useState<string>("");
   
   // Display states
+  const [showTable, setShowTable] = useState(false);
   const [sortField, setSortField] = useState<SortField>('createdAt');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  const [showTable, setShowTable] = useState(false);
 
-  // Pagination states
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(50);
-
-  // Column resizing states
-  const [columnWidths, setColumnWidths] = useState({
-    description: 200,
-    shorturl: 200,
-    longurl: 250,
-    campaign: 150,
-    clicks: 120,
-    createdAt: 120,
-    actions: 100
-  });
-  const [isResizing, setIsResizing] = useState<string | null>(null);
-
-  // Load all data in background
+  // Progressive data loading with real-time updates
   useEffect(() => {
-    async function loadData() {
+    let isMounted = true;
+    
+    async function loadDataProgressively() {
+      // Cancel any existing load operation
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      
+      // Create new abort controller for this operation
+      abortControllerRef.current = new AbortController();
+      const signal = abortControllerRef.current.signal;
+      
       try {
-        setLoading(true);
-        setLoadingProgress("Loading campaigns...");
+        setError("");
+        setLoadingState({
+          isLoading: true,
+          loadedCount: 0,
+          totalCount: 0,
+          currentPage: 1,
+          isComplete: false
+        });
         
-        const response = await fetch('/api/reports?limit=10000');
-        if (!response.ok) {
-          throw new Error('Failed to fetch reports data');
+        // First, quickly load campaigns (small dataset)
+        const campaignsResponse = await fetch('/api/campaigns?limit=1000', { signal });
+        if (campaignsResponse.ok && isMounted) {
+          const campaignsData = await campaignsResponse.json();
+          setAllCampaigns(campaignsData.campaigns || []);
         }
         
-        setLoadingProgress("Processing links...");
-        const reportsData: ReportsData = await response.json();
-        setData(reportsData);
-        setAllLinks(reportsData.links);
-        setLoadingProgress("Ready!");
+        // Start progressive link loading
+        let currentPage = 1;
+        let hasMorePages = true;
+        let allLoadedLinks: Link[] = [];
+        
+        while (hasMorePages && isMounted && !signal.aborted) {
+          const linksResponse = await fetch(`/api/reports?limit=100&page=${currentPage}`, { signal });
+          
+          if (!linksResponse.ok) {
+            throw new Error(`Failed to fetch page ${currentPage}`);
+          }
+          
+          const data = await linksResponse.json();
+          const newLinks = data.links || [];
+          
+          if (newLinks.length > 0 && isMounted) {
+            allLoadedLinks = [...allLoadedLinks, ...newLinks];
+            setAllLinks([...allLoadedLinks]); // Trigger re-render with new data
+            
+            // Update loading progress
+            setLoadingState(prev => ({
+              ...prev,
+              loadedCount: allLoadedLinks.length,
+              totalCount: data.summary?.totalLinks || allLoadedLinks.length,
+              currentPage: currentPage,
+              isComplete: !data.pagination?.hasNextPage || newLinks.length < 100
+            }));
+            
+            // Small delay to show progressive loading (remove in production if too slow)
+            await new Promise(resolve => setTimeout(resolve, 50));
+          }
+          
+          // Check if we have more pages
+          hasMorePages = data.pagination?.hasNextPage && newLinks.length === 100;
+          currentPage++;
+          
+          // Safety limit to prevent infinite loops
+          if (currentPage > 100) {
+            hasMorePages = false;
+          }
+        }
+        
+        if (isMounted && !signal.aborted) {
+          setLoadingState(prev => ({
+            ...prev,
+            isLoading: false,
+            isComplete: true
+          }));
+        }
+        
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
-      } finally {
-        setLoading(false);
-        setLoadingProgress("");
+        if (isMounted && !signal.aborted) {
+          const errorMessage = err instanceof Error ? err.message : 'Failed to load data';
+          setError(errorMessage);
+          setLoadingState(prev => ({
+            ...prev,
+            isLoading: false,
+            error: errorMessage
+          }));
+        }
       }
     }
-    loadData();
-  }, []);
+    
+    loadDataProgressively();
+    
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []); // Only run once on mount
 
-  // Filter and sort links
+  // Client-side filtering and sorting (instant, no API calls)
   const filteredAndSortedLinks = useMemo(() => {
     if (!allLinks.length) return [];
 
-    let filtered = allLinks.filter(link => {
+    let filtered = allLinks.filter((link: Link) => {
       // Campaign filter
-      if (selectedCampaign !== "all" && !link.campaign.toLowerCase().includes(selectedCampaign.toLowerCase())) {
+      if (selectedCampaign !== "all" && link.campaign !== selectedCampaign) {
         return false;
       }
 
-      // Search filter
+      // Search filter - check description, URLs, title
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
-        if (
-          !link.description.toLowerCase().includes(query) &&
-          !link.longurl.toLowerCase().includes(query) &&
-          !link.shorturl.toLowerCase().includes(query) &&
-          !link.title.toLowerCase().includes(query)
-        ) {
+        const searchableFields = [
+          link.description,
+          link.longurl,
+          link.shorturl,
+          link.title
+        ].filter(Boolean).join(' ').toLowerCase();
+        
+        if (!searchableFields.includes(query)) {
           return false;
         }
       }
@@ -150,20 +217,39 @@ export default function ReportsPage() {
       return true;
     });
 
-    // Sort
-    filtered.sort((a, b) => {
-      let aValue: any = a[sortField];
-      let bValue: any = b[sortField];
+    // Sort the filtered results
+    filtered.sort((a: Link, b: Link) => {
+      let aValue: string | number | Date;
+      let bValue: string | number | Date;
 
-      if (sortField === 'clicks') {
-        aValue = Number(aValue);
-        bValue = Number(bValue);
-      } else if (sortField === 'createdAt') {
-        aValue = new Date(aValue);
-        bValue = new Date(bValue);
-      } else {
-        aValue = String(aValue).toLowerCase();
-        bValue = String(bValue).toLowerCase();
+      switch (sortField) {
+        case 'description':
+          aValue = a.description.toLowerCase();
+          bValue = b.description.toLowerCase();
+          break;
+        case 'shorturl':
+          aValue = a.shorturl.toLowerCase();
+          bValue = b.shorturl.toLowerCase();
+          break;
+        case 'longurl':
+          aValue = a.longurl.toLowerCase();
+          bValue = b.longurl.toLowerCase();
+          break;
+        case 'campaign':
+          aValue = a.campaign.toLowerCase();
+          bValue = b.campaign.toLowerCase();
+          break;
+        case 'clicks':
+          aValue = Number(a.clicks);
+          bValue = Number(b.clicks);
+          break;
+        case 'createdAt':
+          aValue = new Date(a.createdAt);
+          bValue = new Date(b.createdAt);
+          break;
+        default:
+          aValue = '';
+          bValue = '';
       }
 
       if (aValue < bValue) {
@@ -178,19 +264,19 @@ export default function ReportsPage() {
     return filtered;
   }, [allLinks, selectedCampaign, searchQuery, minClicks, dateFrom, dateTo, sortField, sortDirection]);
 
-  // Calculate summary for current view
+  // Calculate summary stats for current filtered view
   const currentViewSummary = useMemo(() => {
-    const totalClicks = filteredAndSortedLinks.reduce((sum, link) => sum + link.clicks, 0);
-    const totalUniqueClicks = filteredAndSortedLinks.reduce((sum, link) => sum + (link.uniqueClicks || 0), 0);
+    const totalClicks = filteredAndSortedLinks.reduce((sum: number, link: Link) => sum + link.clicks, 0);
+    const totalUniqueClicks = filteredAndSortedLinks.reduce((sum: number, link: Link) => sum + (link.uniqueClicks || 0), 0);
     
-    const clicksByUrl = filteredAndSortedLinks.reduce((acc, link) => {
+    const clicksByUrl = filteredAndSortedLinks.reduce((acc: Record<string, any>, link: Link) => {
       acc[link.shorturl] = {
-        title: link.title || link.description || link.shorturl,
+        title: link.description || link.title || link.shorturl,
         clicks: link.clicks,
         uniqueClicks: link.uniqueClicks || 0,
       };
       return acc;
-    }, {} as Record<string, { title: string; clicks: number; uniqueClicks: number }>);
+    }, {});
 
     return {
       totalLinks: filteredAndSortedLinks.length,
@@ -200,76 +286,60 @@ export default function ReportsPage() {
     };
   }, [filteredAndSortedLinks]);
 
-  // Pagination calculations
-  const totalPages = Math.ceil(filteredAndSortedLinks.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedLinks = filteredAndSortedLinks.slice(startIndex, endIndex);
-
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [selectedCampaign, searchQuery, minClicks, dateFrom, dateTo, itemsPerPage]);
-
-  const runReport = () => {
+  // Event handlers
+  const runReport = useCallback(() => {
     setShowTable(true);
-    setCurrentPage(1); // Reset to first page when running report
-  };
+  }, []);
 
-  const resetFilters = () => {
+  const resetFilters = useCallback(() => {
     setSelectedCampaign("all");
     setSearchQuery("");
     setMinClicks("");
     setDateFrom("");
     setDateTo("");
     setShowTable(false);
-    setCurrentPage(1);
-  };
+  }, []);
 
-  const handleSort = (field: SortField) => {
+  const handleSort = useCallback((field: SortField) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
       setSortField(field);
       setSortDirection('asc');
     }
-  };
+  }, [sortField, sortDirection]);
 
-  // Column resizing handlers
-  const handleMouseDown = (columnKey: string) => (e: any) => {
-    e.preventDefault();
-    setIsResizing(columnKey);
-    
-    const startX = e.clientX;
-    const startWidth = columnWidths[columnKey as keyof typeof columnWidths];
-    
-    const handleMouseMove = (e: MouseEvent) => {
-      const deltaX = e.clientX - startX;
-      const newWidth = Math.max(80, startWidth + deltaX); // Minimum width of 80px
-      
-      setColumnWidths((prev: any) => ({
-        ...prev,
-        [columnKey]: newWidth
-      }));
-    };
-    
-    const handleMouseUp = () => {
-      setIsResizing(null);
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-    
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-  };
-
-  const openEditLink = (linkId: number) => {
+  const openEditLink = useCallback((linkId: number) => {
     const editUrl = `https://link.josephjacobs.org/user/links/${linkId}/edit`;
     window.open(editUrl, '_blank', 'noopener,noreferrer');
-  };
+  }, []);
 
-  const exportToCSV = () => {
-    if (!filteredAndSortedLinks.length) return;
+  // CSV Export - exports exactly what's currently displayed
+  const exportToCSV = useCallback(() => {
+    if (!filteredAndSortedLinks.length) {
+      // Still allow export when empty - export headers and zero summary
+      const headers = [
+        'Description',
+        'Short URL',
+        'Original URL',
+        'Campaign',
+        'Total Clicks',
+        'Unique Clicks',
+        'Created At'
+      ];
+
+      const csvData = [
+        headers.join(','),
+        '',
+        '--- SUMMARY ---',
+        `"Total Links","0","","","","","",""`,
+        `"Total Clicks","0","","","","","",""`,
+        `"Total Unique Clicks","0","","","","","",""`
+      ].join('\n');
+
+      downloadCSV(csvData, 'empty');
+      return;
+    }
 
     const headers = [
       'Description',
@@ -278,44 +348,61 @@ export default function ReportsPage() {
       'Campaign',
       'Total Clicks',
       'Unique Clicks',
-      'Created At',
-      'Edit URL'
+      'Created At'
     ];
 
     const csvData = [
       headers.join(','),
-      ...filteredAndSortedLinks.map((link: any) => [
-        `"${link.description || link.title || ''}"`,
+      ...filteredAndSortedLinks.map((link: Link) => [
+        `"${(link.description || link.title || '').replace(/"/g, '""')}"`,
         `"${link.shorturl}"`,
         `"${link.longurl}"`,
         `"${link.campaign}"`,
         link.clicks.toString(),
         (link.uniqueClicks || 0).toString(),
-        `"${new Date(link.createdAt).toLocaleDateString()}"`,
-        `"https://link.josephjacobs.org/user/links/${link.id}/edit"`
+        `"${new Date(link.createdAt).toLocaleDateString()}"`
       ].join(',')),
       '',
       '--- SUMMARY ---',
-      `"Total Links","${currentViewSummary.totalLinks}","","","","","",""`,
-      `"Total Clicks","${currentViewSummary.totalClicks}","","","","","",""`,
-      `"Total Unique Clicks","${currentViewSummary.totalUniqueClicks}","","","","","",""`
+      `"Total Links","${currentViewSummary.totalLinks}","","","","",""`,
+      `"Total Clicks","${currentViewSummary.totalClicks}","","","","",""`,
+      `"Total Unique Clicks","${currentViewSummary.totalUniqueClicks}","","","","",""`
     ].join('\n');
 
+    // Generate filename based on current filters
+    let filename = 'report';
+    if (selectedCampaign !== "all") {
+      filename += `-${selectedCampaign.replace(/[^a-zA-Z0-9]/g, '-')}`;
+    } else if (searchQuery) {
+      filename += `-${searchQuery.replace(/[^a-zA-Z0-9]/g, '-')}`;
+    } else {
+      filename += '-all-links';
+    }
+    
+    downloadCSV(csvData, filename);
+  }, [filteredAndSortedLinks, currentViewSummary, selectedCampaign, searchQuery]);
+
+  const downloadCSV = useCallback((csvData: string, filenameSuffix: string) => {
     const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
     
-    const campaignName = selectedCampaign !== "all" ? selectedCampaign : searchQuery || "all-links";
     const today = new Date().toISOString().split('T')[0];
-    link.setAttribute('download', `report-${campaignName}-${today}.csv`);
+    link.setAttribute('download', `report-${filenameSuffix}-${today}.csv`);
     
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
+    URL.revokeObjectURL(url);
+  }, []);
 
+  const retryLoad = useCallback(() => {
+    window.location.reload();
+  }, []);
+
+  // Sort icon component
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortField !== field) return <span className="text-gray-400">↕</span>;
     return (
@@ -325,7 +412,8 @@ export default function ReportsPage() {
     );
   };
 
-  if (loading) {
+  // Loading state
+  if (loadingState.isLoading && allLinks.length === 0) {
     return (
       <ProtectedLayout>
         <Header title="Link Reports" />
@@ -333,15 +421,13 @@ export default function ReportsPage() {
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <div className="text-xl text-gray-600 dark:text-gray-300 mb-4">
-                Loading reports data...
+                🚀 Starting data load...
               </div>
-              {loadingProgress && (
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                  {loadingProgress}
-                </div>
-              )}
-              <div className="mt-4">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                Loading campaigns and preparing for link data
+              </div>
+              <div className="mt-4 w-64 bg-gray-200 rounded-full h-2">
+                <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '10%' }}></div>
               </div>
             </div>
           </div>
@@ -350,22 +436,31 @@ export default function ReportsPage() {
     );
   }
 
+  // Error state with retry
   if (error) {
     return (
       <ProtectedLayout>
         <Header title="Link Reports" />
         <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
             <h3 className="text-lg font-medium text-red-800 dark:text-red-200 mb-2">
-              Error Loading Reports
+              Failed to Load Reports Data
             </h3>
-            <p className="text-red-600 dark:text-red-300">{error}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-            >
-              Retry
-            </button>
+            <p className="text-red-600 dark:text-red-300 mb-4">{error}</p>
+            <div className="flex gap-4">
+              <Button
+                onClick={retryLoad}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Retry
+              </Button>
+              <Button
+                onClick={() => setError("")}
+                className="bg-gray-600 hover:bg-gray-700"
+              >
+                Dismiss
+              </Button>
+            </div>
           </div>
         </div>
       </ProtectedLayout>
@@ -376,112 +471,201 @@ export default function ReportsPage() {
     <ProtectedLayout>
       <Header title="Link Reports" />
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Filters Section */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-            Filters & Search
-          </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-            <div>
-              <Label htmlFor="campaign">Campaign</Label>
-              <Select
-                id="campaign"
-                value={selectedCampaign}
-                onChange={(e) => setSelectedCampaign(e.target.value)}
-              >
-                <option value="all">All Campaigns</option>
-                {data?.campaigns.map((campaign) => (
-                  <option key={campaign.id} value={campaign.name}>
-                    {campaign.name}
-                  </option>
-                ))}
-              </Select>
+        
+        {/* Real-time Loading Progress */}
+        {loadingState.isLoading && allLinks.length > 0 && (
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <h3 className="text-lg font-medium text-blue-800 dark:text-blue-200">
+                  📡 Loading Data in Real-time
+                </h3>
+                <p className="text-blue-600 dark:text-blue-300">
+                  {loadingState.loadedCount.toLocaleString()} of ~{loadingState.totalCount.toLocaleString()} links loaded
+                  {loadingState.currentPage > 1 && ` (Page ${loadingState.currentPage})`}
+                </p>
+              </div>
+              <div className="text-2xl animate-spin">⚡</div>
             </div>
-
-            <div>
-              <Label htmlFor="search">Search</Label>
-              <Input
-                id="search"
-                type="text"
-                placeholder="Search by description, URL..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+            <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2">
+              <div 
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                style={{ 
+                  width: `${Math.min(100, (loadingState.loadedCount / Math.max(loadingState.totalCount, loadingState.loadedCount)) * 100)}%` 
+                }}
+              ></div>
             </div>
+            <p className="text-xs text-blue-500 dark:text-blue-400 mt-1">
+              💡 You can start filtering the loaded data while more loads in the background
+            </p>
+          </div>
+        )}
 
-            <div>
-              <Label htmlFor="minClicks">Minimum Clicks</Label>
-              <Input
-                id="minClicks"
-                type="number"
-                placeholder="0"
-                value={minClicks}
-                onChange={(e) => setMinClicks(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="dateFrom">Date From</Label>
-              <Input
-                id="dateFrom"
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="dateTo">Date To</Label>
-              <Input
-                id="dateTo"
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-              />
+        {/* Completion Notice */}
+        {loadingState.isComplete && !loadingState.isLoading && (
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-medium text-green-800 dark:text-green-200">
+                  ✅ All Data Loaded Successfully
+                </h3>
+                <p className="text-green-600 dark:text-green-300">
+                  {allLinks.length.toLocaleString()} links across {allCampaigns.length} campaigns ready for instant filtering
+                </p>
+              </div>
+              <div className="text-2xl">🎉</div>
             </div>
           </div>
+        )}
 
-          <div className="flex gap-4 items-center flex-wrap">
-            <Button onClick={runReport} className="bg-blue-600 hover:bg-blue-700">
-              Run Report ({filteredAndSortedLinks.length} links)
-            </Button>
-            <Button 
-              onClick={resetFilters} 
-              className="bg-gray-600 hover:bg-gray-700"
-            >
-              Reset Filters
-            </Button>
+        {/* Data Summary Header - show as soon as we have some data */}
+        {allLinks.length > 0 && (
+          <div className="bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-800 rounded-lg p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200">
+                  📊 Dataset Overview
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300">
+                  {allLinks.length.toLocaleString()} links • {allCampaigns.length} campaigns
+                  {loadingState.isLoading && " • Still loading more..."}
+                </p>
+              </div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                Last updated: {new Date().toLocaleTimeString()}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Filters Section - available as soon as we have data */}
+        {allLinks.length > 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+              🔍 Filters & Search
+              <span className="text-sm font-normal text-gray-500 ml-2">
+                (Filtering {allLinks.length.toLocaleString()} loaded links)
+              </span>
+            </h2>
             
-            {/* Items per page selector */}
-            <div className="flex items-center gap-2">
-              <Label>Links per page:</Label>
-              <Select
-                value={itemsPerPage.toString()}
-                onChange={(e) => setItemsPerPage(Number(e.target.value))}
-                className="w-20"
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+              {/* Campaign Filter */}
+              <div>
+                <label htmlFor="campaign" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Campaign
+                </label>
+                <Select
+                  id="campaign"
+                  value={selectedCampaign}
+                  onChange={(e) => setSelectedCampaign(e.target.value)}
+                >
+                  <option value="all">All Campaigns ({allCampaigns.length})</option>
+                  {allCampaigns.map((campaign) => (
+                    <option key={campaign.id} value={campaign.name}>
+                      {campaign.name}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+
+              {/* Search Bar */}
+              <div>
+                <label htmlFor="search" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Search Links
+                </label>
+                <Input
+                  id="search"
+                  type="text"
+                  placeholder="Search description, URLs, title..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+
+              {/* Minimum Clicks Filter */}
+              <div>
+                <label htmlFor="minClicks" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Minimum Clicks
+                </label>
+                <Input
+                  id="minClicks"
+                  type="number"
+                  placeholder="0"
+                  min="0"
+                  value={minClicks}
+                  onChange={(e) => setMinClicks(e.target.value)}
+                />
+              </div>
+
+              {/* Date From */}
+              <div>
+                <label htmlFor="dateFrom" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Created After
+                </label>
+                <Input
+                  id="dateFrom"
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                />
+              </div>
+
+              {/* Date To */}
+              <div>
+                <label htmlFor="dateTo" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Created Before
+                </label>
+                <Input
+                  id="dateTo"
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-4 items-center">
+              <Button 
+                onClick={runReport} 
+                className="bg-blue-600 hover:bg-blue-700"
+                disabled={filteredAndSortedLinks.length === 0}
               >
-                <option value="10">10</option>
-                <option value="25">25</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-                <option value="250">250</option>
-                <option value="500">500</option>
-              </Select>
+                🔍 Run Report ({filteredAndSortedLinks.length.toLocaleString()} matches)
+              </Button>
+              <Button 
+                onClick={resetFilters} 
+                className="bg-gray-600 hover:bg-gray-700"
+              >
+                🔄 Reset Filters
+              </Button>
+              <Button 
+                onClick={exportToCSV}
+                className="bg-green-600 hover:bg-green-700"
+                disabled={!showTable || filteredAndSortedLinks.length === 0}
+              >
+                📥 Export Current View
+              </Button>
+              {loadingState.isLoading && (
+                <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+                  <span className="animate-pulse">🔄</span>
+                  <span className="ml-1">More data loading...</span>
+                </div>
+              )}
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Summary Section */}
+        {/* Summary Statistics */}
         {showTable && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-              Summary Statistics
+              Current View Summary
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
                 <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                  {currentViewSummary.totalLinks}
+                  {currentViewSummary.totalLinks.toLocaleString()}
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-300">Total Links</div>
               </div>
@@ -508,148 +692,139 @@ export default function ReportsPage() {
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                 Report Results
               </h2>
-              <Button 
-                onClick={exportToCSV}
-                className="bg-green-600 hover:bg-green-700"
-                disabled={!paginatedLinks.length}
-              >
-                Export to CSV
-              </Button>
+              <div className="text-sm text-gray-600 dark:text-gray-300">
+                Showing {filteredAndSortedLinks.length.toLocaleString()} of {allLinks.length.toLocaleString()} total links
+              </div>
             </div>
 
-            {paginatedLinks.length === 0 ? (
-              <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-                No links match your filters.
+            {filteredAndSortedLinks.length === 0 ? (
+              <div className="p-12 text-center">
+                <div className="text-6xl mb-4">🔍</div>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                  No links match your filters
+                </h3>
+                <p className="text-gray-500 dark:text-gray-400 mb-4">
+                  Try adjusting your search criteria or removing some filters
+                </p>
+                <Button 
+                  onClick={resetFilters}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  Clear All Filters
+                </Button>
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full table-fixed">
+                <table className="w-full">
                   <thead className="bg-gray-50 dark:bg-gray-700">
                     <tr>
                       <th 
-                        className="relative px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
-                        style={{ width: `${columnWidths.description}px` }}
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
                         onClick={() => handleSort('description')}
                       >
                         Description <SortIcon field="description" />
-                        <div 
-                          className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-500 opacity-0 hover:opacity-100"
-                          onMouseDown={handleMouseDown('description')}
-                        />
                       </th>
                       <th 
-                        className="relative px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
-                        style={{ width: `${columnWidths.shorturl}px` }}
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
                         onClick={() => handleSort('shorturl')}
                       >
                         Short URL <SortIcon field="shorturl" />
-                        <div 
-                          className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-500 opacity-0 hover:opacity-100"
-                          onMouseDown={handleMouseDown('shorturl')}
-                        />
                       </th>
                       <th 
-                        className="relative px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
-                        style={{ width: `${columnWidths.longurl}px` }}
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
                         onClick={() => handleSort('longurl')}
                       >
                         Original URL <SortIcon field="longurl" />
-                        <div 
-                          className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-500 opacity-0 hover:opacity-100"
-                          onMouseDown={handleMouseDown('longurl')}
-                        />
                       </th>
                       <th 
-                        className="relative px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
-                        style={{ width: `${columnWidths.campaign}px` }}
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
                         onClick={() => handleSort('campaign')}
                       >
                         Campaign <SortIcon field="campaign" />
-                        <div 
-                          className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-500 opacity-0 hover:opacity-100"
-                          onMouseDown={handleMouseDown('campaign')}
-                        />
                       </th>
                       <th 
-                        className="relative px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
-                        style={{ width: `${columnWidths.clicks}px` }}
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
                         onClick={() => handleSort('clicks')}
                       >
-                        Clicks <SortIcon field="clicks" />
-                        <div 
-                          className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-500 opacity-0 hover:opacity-100"
-                          onMouseDown={handleMouseDown('clicks')}
-                        />
+                        Total Clicks <SortIcon field="clicks" />
                       </th>
                       <th 
-                        className="relative px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
-                        style={{ width: `${columnWidths.createdAt}px` }}
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
                         onClick={() => handleSort('createdAt')}
                       >
-                        Created <SortIcon field="createdAt" />
-                        <div 
-                          className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-500 opacity-0 hover:opacity-100"
-                          onMouseDown={handleMouseDown('createdAt')}
-                        />
+                        Created At <SortIcon field="createdAt" />
                       </th>
-                      <th 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                        style={{ width: `${columnWidths.actions}px` }}
-                      >
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {paginatedLinks.map((link: any) => (
+                    {filteredAndSortedLinks.map((link: Link) => (
                       <tr key={link.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td className="px-6 py-4 text-sm text-gray-900 dark:text-white overflow-hidden">
-                          <div className="truncate" title={link.description || link.title || 'No description'}>
-                            {link.description || link.title || 'No description'}
+                        <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                          <div className="max-w-xs">
+                            <div className="font-medium truncate" title={link.description || link.title || 'No description'}>
+                              {link.description || link.title || 'No description'}
+                            </div>
+                            {link.title && link.description && link.title !== link.description && (
+                              <div className="text-xs text-gray-500 dark:text-gray-400 truncate" title={link.title}>
+                                {link.title}
+                              </div>
+                            )}
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-sm overflow-hidden">
+                        <td className="px-6 py-4 text-sm">
                           <a 
                             href={link.shorturl} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="text-blue-600 dark:text-blue-400 hover:underline truncate block"
+                            className="text-blue-600 dark:text-blue-400 hover:underline font-mono text-xs"
                             title={link.shorturl}
                           >
-                            {link.shorturl}
+                            {link.shorturl.replace('https://', '')}
                           </a>
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300 overflow-hidden">
-                          <a 
-                            href={link.longurl} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="hover:underline truncate block"
-                            title={link.longurl}
-                          >
-                            {link.longurl}
-                          </a>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900 dark:text-white overflow-hidden">
-                          <div className="truncate" title={link.campaign}>
-                            {link.campaign}
+                        <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
+                          <div className="max-w-xs">
+                            <a 
+                              href={link.longurl} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="hover:underline truncate block text-xs"
+                              title={link.longurl}
+                            >
+                              {link.longurl}
+                            </a>
                           </div>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+                            {link.campaign}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
                           <div>
-                            <div className="font-medium">{link.clicks}</div>
+                            <div className="font-bold text-lg">{link.clicks.toLocaleString()}</div>
                             {link.uniqueClicks !== undefined && (
-                              <div className="text-xs text-gray-500">{link.uniqueClicks} unique</div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                {link.uniqueClicks.toLocaleString()} unique
+                              </div>
                             )}
                           </div>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
-                          {new Date(link.createdAt).toLocaleDateString()}
+                          <div>
+                            <div>{new Date(link.createdAt).toLocaleDateString()}</div>
+                            <div className="text-xs text-gray-400">
+                              {new Date(link.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            </div>
+                          </div>
                         </td>
                         <td className="px-6 py-4 text-sm">
                           <button
                             onClick={() => openEditLink(link.id)}
-                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-100 rounded hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800 transition-colors"
+                            className="inline-flex items-center px-3 py-1 text-xs font-medium text-blue-600 bg-blue-100 rounded-md hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800 transition-colors"
                             title="Edit this link"
                           >
                             <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -663,64 +838,26 @@ export default function ReportsPage() {
                   </tbody>
                 </table>
               </div>
+            )}
+          </div>
+        )}
 
-              {/* Pagination Controls */}
-              {filteredAndSortedLinks.length > itemsPerPage && (
-                <div className="flex items-center justify-between px-6 py-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-                  <div className="text-sm text-gray-700 dark:text-gray-300">
-                    Showing {startIndex + 1} to {Math.min(endIndex, filteredAndSortedLinks.length)} of {filteredAndSortedLinks.length} results
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setCurrentPage(currentPage - 1)}
-                      disabled={currentPage === 1}
-                      className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Previous
-                    </button>
-                    
-                    <div className="flex items-center gap-1">
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        let pageNum;
-                        if (totalPages <= 5) {
-                          pageNum = i + 1;
-                        } else {
-                          if (currentPage <= 3) {
-                            pageNum = i + 1;
-                          } else if (currentPage >= totalPages - 2) {
-                            pageNum = totalPages - 4 + i;
-                          } else {
-                            pageNum = currentPage - 2 + i;
-                          }
-                        }
-                        
-                        return (
-                          <button
-                            key={pageNum}
-                            onClick={() => setCurrentPage(pageNum)}
-                            className={`px-3 py-1 text-sm border rounded ${
-                              currentPage === pageNum
-                                ? 'bg-blue-600 text-white border-blue-600'
-                                : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                            }`}
-                          >
-                            {pageNum}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    
-                    <button
-                      onClick={() => setCurrentPage(currentPage + 1)}
-                      disabled={currentPage === totalPages}
-                      className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Next
-                    </button>
-                  </div>
-                </div>
-              )}
-            )
+        {/* Empty State - shown when no data is loaded yet */}
+        {allLinks.length === 0 && !loadingState.isLoading && !error && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center">
+            <div className="text-6xl mb-4">�</div>
+            <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">
+              Ready to Load Link Data
+            </h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              Click "Start Loading" to begin progressive data loading with real-time updates.
+            </p>
+            <Button 
+              onClick={() => window.location.reload()}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              🔄 Start Loading Data
+            </Button>
           </div>
         )}
       </div>

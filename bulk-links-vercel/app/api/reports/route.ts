@@ -12,7 +12,7 @@ interface LinkData {
   title: string;
   description: string;
   date: string;
-  campaign?: number | string; // Can be campaign ID or name
+  campaign?: string;
 }
 
 interface CampaignData {
@@ -23,16 +23,20 @@ interface CampaignData {
   list: string;
 }
 
-// GET - Get all links with statistics for reporting
-export async function GET(req: Request) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const campaignFilter = searchParams.get('campaign');
-    const searchQuery = searchParams.get('search');
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '1000'); // High limit to get all data
+// Cache for campaigns to avoid repeated API calls
+let campaignsCache: Record<number, string> | null = null;
+let cacheTimestamp = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-    // Fetch campaigns first to map campaign IDs to names
+async function getCampaignsMap(): Promise<Record<number, string>> {
+  const now = Date.now();
+  
+  // Return cached data if it's still valid
+  if (campaignsCache && (now - cacheTimestamp) < CACHE_DURATION) {
+    return campaignsCache;
+  }
+  
+  try {
     const campaignsResponse = await fetch(`${JJA_BASE}/campaigns?limit=1000&page=1`, {
       headers: {
         "Authorization": `Bearer ${JJA_API_KEY}`,
@@ -40,158 +44,102 @@ export async function GET(req: Request) {
       },
     });
 
-    let campaignsMap: Record<number, string> = {};
     if (campaignsResponse.ok) {
       const campaignsData = await campaignsResponse.json();
       if (campaignsData.error === 0 || campaignsData.error === "0") {
         const campaigns: CampaignData[] = campaignsData.data?.campaigns || [];
-        campaignsMap = campaigns.reduce((acc, campaign) => {
+        campaignsCache = campaigns.reduce((acc, campaign) => {
           acc[campaign.id] = campaign.name;
           return acc;
         }, {} as Record<number, string>);
+        cacheTimestamp = now;
+        return campaignsCache;
       }
     }
+  } catch (error) {
+    console.error("Error fetching campaigns:", error);
+  }
+  
+  return {};
+}
 
-    // Fetch all links with pagination to get complete dataset
-    let allLinks: LinkData[] = [];
-    let currentPage = 1;
-    let hasMorePages = true;
-
-    while (hasMorePages) {
-      const response = await fetch(`${JJA_BASE}/urls?limit=100&page=${currentPage}&order=date`, {
-        headers: {
-          "Authorization": `Bearer ${JJA_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        return NextResponse.json(
-          { error: "Failed to fetch links" },
-          { status: response.status }
-        );
-      }
-
-      const data = await response.json();
-      
-      if (data.error === 0 || data.error === "0") {
-        const pageLinks: LinkData[] = data.data?.urls || [];
-        allLinks = [...allLinks, ...pageLinks];
-
-        // Check if there are more pages
-        const currentPageNum = data.data?.currentpage || 1;
-        const maxPage = data.data?.maxpage || 1;
-        hasMorePages = currentPageNum < maxPage;
-        currentPage++;
-      } else {
-        hasMorePages = false;
-      }
-    }
-
-    // Enhance links with campaign names and detailed statistics
-    const enhancedLinks = await Promise.all(
-      allLinks.map(async (link) => {
-        // Get detailed statistics for each link
-        try {
-          const detailResponse = await fetch(`${JJA_BASE}/url/${link.id}`, {
-            headers: {
-              "Authorization": `Bearer ${JJA_API_KEY}`,
-              "Content-Type": "application/json",
-            },
-          });
-
-          let detailedStats = null;
-          if (detailResponse.ok) {
-            const detailData = await detailResponse.json();
-            if (detailData.error === 0) {
-              detailedStats = detailData.data;
-            }
-          }
-
-          return {
-            ...link,
-            campaign: (link.campaign && campaignsMap[Number(link.campaign)]) || 'No Campaign',
-            uniqueClicks: detailedStats?.uniqueClicks || 0,
-            topCountries: detailedStats?.topCountries || {},
-            topReferrers: detailedStats?.topReferrers || {},
-            topBrowsers: detailedStats?.topBrowsers || {},
-            createdAt: link.date,
-          };
-        } catch (error) {
-          console.error(`Error fetching details for link ${link.id}:`, error);
-          return {
-            ...link,
-            campaign: 'No Campaign',
-            uniqueClicks: 0,
-            topCountries: {},
-            topReferrers: {},
-            topBrowsers: {},
-            createdAt: link.date,
-          };
-        }
-      })
-    );
-
-    // Apply filters
-    let filteredLinks = enhancedLinks;
-
-    // Campaign filter
-    if (campaignFilter && campaignFilter !== 'all') {
-      filteredLinks = filteredLinks.filter(link => 
-        link.campaign.toLowerCase().includes(campaignFilter.toLowerCase())
-      );
-    }
-
-    // Search filter (description, original URL, short URL)
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filteredLinks = filteredLinks.filter(link =>
-        link.description.toLowerCase().includes(query) ||
-        link.longurl.toLowerCase().includes(query) ||
-        link.shorturl.toLowerCase().includes(query) ||
-        link.title.toLowerCase().includes(query)
-      );
-    }
-
-    // Calculate summary statistics
-    const totalClicks = filteredLinks.reduce((sum, link) => sum + link.clicks, 0);
-    const totalUniqueClicks = filteredLinks.reduce((sum, link) => sum + (link.uniqueClicks || 0), 0);
+// GET - Get links with pagination for progressive loading
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '100');
     
-    // Group clicks by URL for summary
-    const clicksByUrl = filteredLinks.reduce((acc, link) => {
-      acc[link.shorturl] = {
-        title: link.title || link.description || link.shorturl,
-        clicks: link.clicks,
-        uniqueClicks: link.uniqueClicks || 0,
-      };
-      return acc;
-    }, {} as Record<string, { title: string; clicks: number; uniqueClicks: number }>);
+    // Fetch campaigns map (cached)
+    const campaignsMap = await getCampaignsMap();
 
-    // Apply pagination to filtered results
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-    const paginatedLinks = filteredLinks.slice(startIndex, endIndex);
+    // Fetch links for this page only
+    const response = await fetch(`${JJA_BASE}/urls?limit=${limit}&page=${page}&order=date`, {
+      headers: {
+        "Authorization": `Bearer ${JJA_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+    });
 
-    return NextResponse.json({
-      links: paginatedLinks,
+    if (!response.ok) {
+      return NextResponse.json(
+        { error: `Failed to fetch links: ${response.status}` },
+        { status: response.status }
+      );
+    }
+
+    const data = await response.json();
+    
+    if (data.error !== 0 && data.error !== "0") {
+      return NextResponse.json(
+        { error: data.message || "Failed to fetch links" },
+        { status: 400 }
+      );
+    }
+
+    const links: LinkData[] = data.data?.urls || [];
+    
+    // Enhance links with campaign names (fast lookup)
+    const enhancedLinks = links.map((link) => ({
+      ...link,
+      campaign: campaignsMap[link.id] || 'No Campaign',
+      uniqueClicks: 0, // Will be fetched individually if needed
+      createdAt: link.date,
+    }));
+
+    // Calculate quick summary stats for this page
+    const totalClicks = enhancedLinks.reduce((sum, link) => sum + link.clicks, 0);
+    
+    // Prepare response
+    const responseData = {
+      links: enhancedLinks,
       summary: {
-        totalLinks: filteredLinks.length,
+        totalLinks: data.data?.result || enhancedLinks.length,
         totalClicks,
-        totalUniqueClicks,
-        clicksByUrl,
+        totalUniqueClicks: 0, // Not calculated for performance
+        clicksByUrl: enhancedLinks.reduce((acc, link) => {
+          acc[link.shorturl] = {
+            title: link.title || link.description || link.shorturl,
+            clicks: link.clicks,
+            uniqueClicks: 0,
+          };
+          return acc;
+        }, {} as Record<string, { title: string; clicks: number; uniqueClicks: number }>),
       },
       pagination: {
         page,
         limit,
-        totalPages: Math.ceil(filteredLinks.length / limit),
-        hasNextPage: endIndex < filteredLinks.length,
+        totalPages: data.data?.maxpage || 1,
+        hasNextPage: (data.data?.currentpage || 1) < (data.data?.maxpage || 1),
         hasPrevPage: page > 1,
       },
       campaigns: Object.keys(campaignsMap).map((id: string) => ({ 
         id: parseInt(id), 
         name: campaignsMap[parseInt(id)] 
       })),
-    });
+    };
+
+    return NextResponse.json(responseData);
 
   } catch (error) {
     console.error("Error in reports API:", error);
