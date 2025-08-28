@@ -125,7 +125,7 @@ export default function ReportsPage() {
         let allLoadedLinks: Link[] = [];
         
         while (hasMorePages && isMounted && !signal.aborted) {
-          const linksResponse = await fetch(`/api/reports?limit=100&page=${currentPage}`, { signal });
+          const linksResponse = await fetch(`/api/reports?limit=20&page=${currentPage}`, { signal });
           
           if (!linksResponse.ok) {
             throw new Error(`Failed to fetch page ${currentPage}`);

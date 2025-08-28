@@ -64,10 +64,19 @@ async function getCampaignsMap(): Promise<Record<number, string>> {
   return {};
 }
 
-// Function to fetch unique clicks for a single link
+// Function to add delay between requests
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Function to fetch unique clicks for a single link with rate limiting
 async function getUniqueClicksForLink(linkId: number): Promise<number> {
   try {
     console.log(`🔍 Fetching unique clicks for link ID: ${linkId}`);
+    
+    // Add a small delay to avoid overwhelming the server
+    await delay(100); // 100ms delay between requests
+    
     const response = await fetch(`${JJA_BASE}/url/${linkId}`, {
       headers: {
         "Authorization": `Bearer ${JJA_API_KEY}`,
@@ -98,14 +107,68 @@ async function getUniqueClicksForLink(linkId: number): Promise<number> {
   return 0;
 }
 
+// Function to process links in batches to avoid overwhelming the server
+async function processLinksInBatches(links: LinkData[], campaignsMap: Record<number, string>, skipUniqueClicks: boolean = false, batchSize: number = 3): Promise<any[]> {
+  const enhancedLinks = [];
+  
+  for (let i = 0; i < links.length; i += batchSize) {
+    const batch = links.slice(i, i + batchSize);
+    console.log(`🔄 Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(links.length / batchSize)} (${batch.length} links)`);
+    
+    const batchResults = await Promise.all(batch.map(async (link) => {
+      // Get campaign name from the campaign ID in the link data
+      let campaignName = 'No Campaign';
+      
+      if (link.campaign) {
+        // If campaign is a number (campaign ID), look it up in the campaigns map
+        if (typeof link.campaign === 'number') {
+          campaignName = campaignsMap[link.campaign] || `Campaign ${link.campaign}`;
+        } else {
+          // If campaign is already a string, use it as is
+          campaignName = link.campaign;
+        }
+      }
+
+      let uniqueClicks = 0;
+      
+      // Only fetch unique clicks if not skipping (for faster loading option)
+      if (!skipUniqueClicks) {
+        console.log(`🔄 Fetching unique clicks for link ${link.id} (${link.alias})`);
+        uniqueClicks = await getUniqueClicksForLink(link.id);
+        console.log(`📈 Got ${uniqueClicks} unique clicks for link ${link.id}`);
+      } else {
+        console.log(`⚡ Skipping unique clicks for link ${link.id} (fast mode)`);
+      }
+      
+      return {
+        ...link,
+        campaign: campaignName,
+        uniqueClicks,
+        createdAt: link.date,
+      };
+    }));
+    
+    enhancedLinks.push(...batchResults);
+    
+    // Add a longer delay between batches to be more gentle (only if fetching unique clicks)
+    if (i + batchSize < links.length && !skipUniqueClicks) {
+      console.log(`⏱️ Waiting 500ms before next batch...`);
+      await delay(500);
+    }
+  }
+  
+  return enhancedLinks;
+}
+
 // GET - Get links with pagination for progressive loading
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '100');
+    const limit = parseInt(searchParams.get('limit') || '20'); // Reduced from 100 to 20 for gentler loading
+    const skipUniqueClicks = searchParams.get('skipUniqueClicks') === 'true'; // Optional fast mode
     
-    console.log(`🔍 API Request - Page: ${page}, Limit: ${limit}`);
+    console.log(`🔍 API Request - Page: ${page}, Limit: ${limit}, Skip Unique Clicks: ${skipUniqueClicks}`);
     
     // Fetch campaigns map (cached)
     const campaignsMap = await getCampaignsMap();
@@ -143,33 +206,9 @@ export async function GET(req: Request) {
       console.log('🔍 Available campaigns map:', Object.keys(campaignsMap).length, 'campaigns');
     }
     
-    // Enhance links with campaign names and optionally unique clicks (fast lookup)
-    const enhancedLinks = await Promise.all(links.map(async (link) => {
-      // Get campaign name from the campaign ID in the link data
-      let campaignName = 'No Campaign';
-      
-      if (link.campaign) {
-        // If campaign is a number (campaign ID), look it up in the campaigns map
-        if (typeof link.campaign === 'number') {
-          campaignName = campaignsMap[link.campaign] || `Campaign ${link.campaign}`;
-        } else {
-          // If campaign is already a string, use it as is
-          campaignName = link.campaign;
-        }
-      }
-
-      // Always fetch unique clicks for detailed analytics
-      console.log(`🔄 Fetching unique clicks for link ${link.id} (${link.alias})`);
-      const uniqueClicks = await getUniqueClicksForLink(link.id);
-      console.log(`📈 Got ${uniqueClicks} unique clicks for link ${link.id}`);
-      
-      return {
-        ...link,
-        campaign: campaignName,
-        uniqueClicks,
-        createdAt: link.date,
-      };
-    }));
+    // Enhance links with campaign names and unique clicks (with rate limiting)
+    console.log(`🚀 Processing ${links.length} links in batches to avoid overwhelming the server`);
+    const enhancedLinks = await processLinksInBatches(links, campaignsMap, skipUniqueClicks, 3); // Process 3 at a time
 
     // Calculate quick summary stats for this page
     const totalClicks = enhancedLinks.reduce((sum, link) => sum + link.clicks, 0);
