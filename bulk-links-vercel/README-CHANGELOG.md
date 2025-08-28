@@ -23,6 +23,8 @@ This document summarizes the feature work, bug fixes, and ongoing debugging perf
 - **Timeout Prevention**: Proactive measures to prevent long-running requests from timing out
 - **Status Messaging**: Clear indicators when skipping resource-intensive operations for performance
 
+*See `RELEASE-1.2.2.md` for complete performance optimization details and technical specifications.*
+
 ## 1.2.1 — Enhanced Table & Navigation (2025-08-26)
 
 ### 🎯 Navigation Improvements

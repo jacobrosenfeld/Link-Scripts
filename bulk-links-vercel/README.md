@@ -215,6 +215,8 @@ The app integrates with the JJA Link API for:
 - ✅ **UI Improvements**: Enhanced navigation, loading states, and responsiveness
 - ✅ **Admin UX**: Live preview and better publisher management
 
+*For detailed release notes, see `RELEASE-1.2.2.md`, `RELEASE-1.2.0.md`, and `README-CHANGELOG.md`.*
+
 ## Development Notes
 - TypeScript errors in development are expected due to JSX configuration
 - All functionality works correctly in production builds
