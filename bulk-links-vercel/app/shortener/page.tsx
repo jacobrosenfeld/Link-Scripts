@@ -233,9 +233,9 @@ export default function URLShortenerPage() {
       <Header title="URL Shortener" />
       
       <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-        {/* Original URL */}
+        {/* Destination URL */}
         <div>
-          <Label>Original URL *</Label>
+          <Label>Destination URL *</Label>
           <Input
             type="url"
             placeholder="https://example.com/very/long/url"

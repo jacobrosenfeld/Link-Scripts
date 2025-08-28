@@ -138,7 +138,7 @@ export default function HomePage() {
     if (results.length === 0) return;
 
     // Create CSV headers
-    const headers = ['Publication', 'Campaign', 'Date', 'Short URL', 'Status', 'Original URL', 'Error'];
+    const headers = ['Publication', 'Campaign', 'Date', 'Short URL', 'Status', 'Destination URL', 'Error'];
     
     // Create CSV rows
     const csvRows = results.map((r: any) => {

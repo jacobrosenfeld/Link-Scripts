@@ -321,7 +321,7 @@ export default function ReportsPage() {
       const headers = [
         'Description',
         'Short URL',
-        'Original URL',
+        'Destination URL',
         'Campaign',
         'Total Clicks',
         'Unique Clicks',
@@ -344,7 +344,7 @@ export default function ReportsPage() {
     const headers = [
       'Description',
       'Short URL',
-      'Original URL',
+      'Destination URL',
       'Campaign',
       'Total Clicks',
       'Unique Clicks',
@@ -734,7 +734,7 @@ export default function ReportsPage() {
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
                         onClick={() => handleSort('longurl')}
                       >
-                        Original URL <SortIcon field="longurl" />
+                        Destination URL <SortIcon field="longurl" />
                       </th>
                       <th 
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"

@@ -183,7 +183,7 @@ The CSV export includes the following columns in order:
 3. **Date** - Date from form (MM-DD-YY format)
 4. **Short URL** - Complete shortened URL (e.g., `adtracking.link/campaign-pub-date`)
 5. **Status** - Success/Error indicator
-6. **Original URL** - The long URL that was shortened
+6. **Destination URL** - The long URL that was shortened
 7. **Error** - Error message if link creation failed (empty for successful links)
 
 The CSV file is automatically named with the pattern: `bulk-links-[campaign]-[date]-[YYYYMMDD-HHMMSS].csv` (timestamp added for uniqueness).
