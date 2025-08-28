@@ -225,28 +225,28 @@ export default function ReportsPage() {
 
       switch (sortField) {
         case 'description':
-          aValue = a.description.toLowerCase();
-          bValue = b.description.toLowerCase();
+          aValue = (a.description || '').toLowerCase();
+          bValue = (b.description || '').toLowerCase();
           break;
         case 'shorturl':
-          aValue = a.shorturl.toLowerCase();
-          bValue = b.shorturl.toLowerCase();
+          aValue = (a.shorturl || '').toLowerCase();
+          bValue = (b.shorturl || '').toLowerCase();
           break;
         case 'longurl':
-          aValue = a.longurl.toLowerCase();
-          bValue = b.longurl.toLowerCase();
+          aValue = (a.longurl || '').toLowerCase();
+          bValue = (b.longurl || '').toLowerCase();
           break;
         case 'campaign':
-          aValue = a.campaign.toLowerCase();
-          bValue = b.campaign.toLowerCase();
+          aValue = (a.campaign || '').toLowerCase();
+          bValue = (b.campaign || '').toLowerCase();
           break;
         case 'clicks':
-          aValue = Number(a.clicks);
-          bValue = Number(b.clicks);
+          aValue = Number(a.clicks || 0);
+          bValue = Number(b.clicks || 0);
           break;
         case 'createdAt':
-          aValue = new Date(a.createdAt);
-          bValue = new Date(b.createdAt);
+          aValue = new Date(a.createdAt || 0);
+          bValue = new Date(b.createdAt || 0);
           break;
         default:
           aValue = '';
