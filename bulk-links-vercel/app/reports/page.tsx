@@ -3,6 +3,7 @@ import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { ProtectedLayout } from "@/components/ProtectedLayout";
 import { Header } from "@/components/Header";
 import { Label, Input, Button, Select } from "@/components/Field";
+import { ResizableTh } from "../components/ResizableTh";
 
 interface Link {
   id: number;
@@ -721,45 +722,16 @@ export default function ReportsPage() {
                 <table className="w-full">
                   <thead className="bg-gray-50 dark:bg-gray-700">
                     <tr>
-                      <th 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
-                        onClick={() => handleSort('description')}
-                      >
-                        Description <SortIcon field="description" />
-                      </th>
-                      <th 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
-                        onClick={() => handleSort('shorturl')}
-                      >
-                        Short URL <SortIcon field="shorturl" />
-                      </th>
-                      <th 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
-                        onClick={() => handleSort('longurl')}
-                      >
-                        Destination URL <SortIcon field="longurl" />
-                      </th>
-                      <th 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
-                        onClick={() => handleSort('campaign')}
-                      >
-                        Campaign <SortIcon field="campaign" />
-                      </th>
-                      <th 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
-                        onClick={() => handleSort('clicks')}
-                      >
-                        Total Clicks <SortIcon field="clicks" />
-                      </th>
-                      <th 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
-                        onClick={() => handleSort('createdAt')}
-                      >
-                        Created At <SortIcon field="createdAt" />
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Actions
-                      </th>
+                      {['Description', 'Short URL', 'Destination URL', 'Campaign', 'Total Clicks', 'Created At', 'Actions'].map((header, idx) => (
+                        <ResizableTh
+                          key={header}
+                          idx={idx}
+                          sortField={sortField}
+                          sortDirection={sortDirection}
+                          handleSort={handleSort}
+                          header={header}
+                        />
+                      ))}
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -767,14 +739,14 @@ export default function ReportsPage() {
                       <tr key={link.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                         <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
                           <div className="max-w-xs">
-                            <div className="font-medium truncate" title={link.description || link.title || 'No description'}>
-                              {link.description || link.title || 'No description'}
-                            </div>
-                            {link.title && link.description && link.title !== link.description && (
-                              <div className="text-xs text-gray-500 dark:text-gray-400 truncate" title={link.title}>
-                                {link.title}
+                              <div className="font-medium truncate" title={link.description || 'No description'}>
+                                {link.description || 'No description'}
                               </div>
-                            )}
+                              {link.title && link.title !== link.description && (
+                                <div className="text-xs text-gray-500 dark:text-gray-400 truncate" title={link.title}>
+                                  {link.title}
+                                </div>
+                              )}
                           </div>
                         </td>
                         <td className="px-6 py-4 text-sm">
@@ -801,10 +773,14 @@ export default function ReportsPage() {
                             </a>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
-                            {link.campaign}
-                          </span>
+                          <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                            <button
+                              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-blue-100 hover:text-blue-700 transition-colors cursor-pointer"
+                              title={`Filter by campaign: ${link.campaign}`}
+                              onClick={() => setSelectedCampaign(link.campaign)}
+                            >
+                              {link.campaign}
+                            </button>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
                           <div>
