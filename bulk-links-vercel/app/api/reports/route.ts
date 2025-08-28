@@ -67,6 +67,7 @@ async function getCampaignsMap(): Promise<Record<number, string>> {
 // Function to fetch unique clicks for a single link
 async function getUniqueClicksForLink(linkId: number): Promise<number> {
   try {
+    console.log(`🔍 Fetching unique clicks for link ID: ${linkId}`);
     const response = await fetch(`${JJA_BASE}/url/${linkId}`, {
       headers: {
         "Authorization": `Bearer ${JJA_API_KEY}`,
@@ -74,14 +75,24 @@ async function getUniqueClicksForLink(linkId: number): Promise<number> {
       },
     });
 
+    console.log(`📊 Response status for link ${linkId}:`, response.status);
+
     if (response.ok) {
       const data = await response.json();
+      console.log(`📊 Response data for link ${linkId}:`, JSON.stringify(data, null, 2));
+      
       if (data.error === 0 || data.error === "0") {
-        return data.data?.uniqueClicks || 0;
+        const uniqueClicks = data.data?.uniqueClicks || 0;
+        console.log(`✅ Unique clicks for link ${linkId}:`, uniqueClicks);
+        return uniqueClicks;
+      } else {
+        console.log(`❌ API error for link ${linkId}:`, data.message);
       }
+    } else {
+      console.log(`❌ HTTP error for link ${linkId}:`, response.status, response.statusText);
     }
   } catch (error) {
-    console.error(`Error fetching unique clicks for link ${linkId}:`, error);
+    console.error(`❌ Exception fetching unique clicks for link ${linkId}:`, error);
   }
   
   return 0;
@@ -94,6 +105,8 @@ export async function GET(req: Request) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '100');
     const includeUniqueClicks = searchParams.get('includeUniqueClicks') === 'true';
+    
+    console.log(`🔍 API Request - Page: ${page}, Limit: ${limit}, Include Unique Clicks: ${includeUniqueClicks}`);
     
     // Fetch campaigns map (cached)
     const campaignsMap = await getCampaignsMap();
@@ -149,7 +162,11 @@ export async function GET(req: Request) {
       // Fetch unique clicks if requested (this will be slower)
       let uniqueClicks = 0;
       if (includeUniqueClicks) {
+        console.log(`🔄 Fetching unique clicks for link ${link.id} (${link.alias})`);
         uniqueClicks = await getUniqueClicksForLink(link.id);
+        console.log(`📈 Got ${uniqueClicks} unique clicks for link ${link.id}`);
+      } else {
+        console.log(`⏭️ Skipping unique clicks for link ${link.id} (not requested)`);
       }
       
       return {
