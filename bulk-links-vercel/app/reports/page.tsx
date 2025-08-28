@@ -772,7 +772,7 @@ export default function ReportsPage() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full table-fixed border-collapse">
                   <thead className="bg-gray-50 dark:bg-gray-700">
                     <tr>
                       {columns.map((column, index) => (
@@ -782,8 +782,8 @@ export default function ReportsPage() {
                           onDragStart={(e) => handleColumnDragStart(e, index)}
                           onDragOver={handleColumnDragOver}
                           onDrop={(e) => handleColumnDrop(e, index)}
-                          style={{ width: column.width }}
-                          className={`px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider relative group ${
+                          style={{ width: column.width, minWidth: column.width, maxWidth: column.width }}
+                          className={`px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider relative group border-r border-gray-200 dark:border-gray-600 ${
                             column.sortable ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600' : ''
                           } ${draggedColumn === index ? 'opacity-50' : ''}`}
                           onClick={column.sortable ? () => handleSort(column.field as SortField) : undefined}
@@ -798,17 +798,18 @@ export default function ReportsPage() {
                               )}
                             </span>
                             <div className="flex items-center">
-                              <div className="w-1 h-4 bg-gray-300 dark:bg-gray-600 mr-1 cursor-grab active:cursor-grabbing" title="Drag to reorder"/>
+                              <div className="w-1 h-4 bg-gray-300 dark:bg-gray-600 mr-2 cursor-grab active:cursor-grabbing hover:bg-gray-400 dark:hover:bg-gray-500" title="Drag to reorder"/>
                               <div
-                                className="w-1 h-4 bg-blue-400 cursor-col-resize hover:bg-blue-600"
+                                className="w-1 h-4 bg-blue-400 cursor-col-resize hover:bg-blue-600 active:bg-blue-700"
                                 title="Drag to resize"
                                 onMouseDown={(e) => {
                                   e.preventDefault();
+                                  e.stopPropagation();
                                   const startX = e.clientX;
                                   const startWidth = column.width;
                                   
                                   const handleMouseMove = (e: MouseEvent) => {
-                                    const newWidth = startWidth + (e.clientX - startX);
+                                    const newWidth = Math.max(50, startWidth + (e.clientX - startX));
                                     handleColumnResize(index, newWidth);
                                   };
                                   
@@ -830,81 +831,89 @@ export default function ReportsPage() {
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                     {filteredAndSortedLinks.map((link: Link) => (
                       <tr key={link.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                          <div className="max-w-xs">
-                              <div className="font-medium truncate" title={link.description || 'No description'}>
-                                {link.description || 'No description'}
-                              </div>
-                              {link.title && link.title !== link.description && (
-                                <div className="text-xs text-gray-500 dark:text-gray-400 truncate" title={link.title}>
-                                  {link.title}
-                                </div>
-                              )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-sm">
-                          <a 
-                            href={link.shorturl} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-blue-600 dark:text-blue-400 hover:underline font-mono text-xs"
-                            title={link.shorturl}
+                        {columns.map((column) => (
+                          <td 
+                            key={column.key} 
+                            className="px-4 py-4 text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-600"
+                            style={{ width: column.width, minWidth: column.width, maxWidth: column.width }}
                           >
-                            {link.shorturl.replace('https://', '')}
-                          </a>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
-                          <div className="max-w-xs">
-                            <a 
-                              href={link.longurl} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="hover:underline truncate block text-xs"
-                              title={link.longurl}
-                            >
-                              {link.longurl}
-                            </a>
-                          </div>
-                        </td>
-                          <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                            <button
-                              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-blue-100 hover:text-blue-700 transition-colors cursor-pointer"
-                              title={`Filter by campaign: ${link.campaign}`}
-                              onClick={() => setSelectedCampaign(link.campaign)}
-                            >
-                              {link.campaign}
-                            </button>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                          <div>
-                            <div className="font-bold text-lg">{link.clicks.toLocaleString()}</div>
-                            {link.uniqueClicks !== undefined && (
-                              <div className="text-xs text-gray-500 dark:text-gray-400">
-                                {link.uniqueClicks.toLocaleString()} unique
+                            {column.key === 'description' && (
+                              <div className="overflow-hidden">
+                                <div className="font-medium truncate" title={link.description || 'No description'}>
+                                  {link.description || 'No description'}
+                                </div>
+                                {link.title && link.title !== link.description && (
+                                  <div className="text-xs text-gray-500 dark:text-gray-400 truncate" title={link.title}>
+                                    {link.title}
+                                  </div>
+                                )}
                               </div>
                             )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
-                          <div>
-                            <div>{new Date(link.createdAt).toLocaleDateString()}</div>
-                            <div className="text-xs text-gray-400">
-                              {new Date(link.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-sm">
-                          <button
-                            onClick={() => openEditLink(link.id)}
-                            className="inline-flex items-center px-3 py-1 text-xs font-medium text-blue-600 bg-blue-100 rounded-md hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800 transition-colors"
-                            title="Edit this link"
-                          >
-                            <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                            Edit
-                          </button>
-                        </td>
+                            {column.key === 'shorturl' && (
+                              <a 
+                                href={link.shorturl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-blue-600 dark:text-blue-400 hover:underline font-mono text-xs block truncate"
+                                title={link.shorturl}
+                              >
+                                {link.shorturl.replace('https://', '')}
+                              </a>
+                            )}
+                            {column.key === 'longurl' && (
+                              <div className="overflow-hidden">
+                                <a 
+                                  href={link.longurl} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="hover:underline truncate block text-xs"
+                                  title={link.longurl}
+                                >
+                                  {link.longurl}
+                                </a>
+                              </div>
+                            )}
+                            {column.key === 'campaign' && (
+                              <button
+                                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-blue-100 hover:text-blue-700 transition-colors cursor-pointer truncate"
+                                title={`Filter by campaign: ${link.campaign}`}
+                                onClick={() => setSelectedCampaign(link.campaign)}
+                              >
+                                {link.campaign}
+                              </button>
+                            )}
+                            {column.key === 'clicks' && (
+                              <div>
+                                <div className="font-bold text-lg">{link.clicks.toLocaleString()}</div>
+                                {link.uniqueClicks !== undefined && (
+                                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                                    {link.uniqueClicks.toLocaleString()} unique
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            {column.key === 'createdAt' && (
+                              <div>
+                                <div>{new Date(link.createdAt).toLocaleDateString()}</div>
+                                <div className="text-xs text-gray-400">
+                                  {new Date(link.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                </div>
+                              </div>
+                            )}
+                            {column.key === 'actions' && (
+                              <button
+                                onClick={() => openEditLink(link.id)}
+                                className="inline-flex items-center px-3 py-1 text-xs font-medium text-blue-600 bg-blue-100 rounded-md hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800 transition-colors"
+                                title="Edit this link"
+                              >
+                                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                                Edit
+                              </button>
+                            )}
+                          </td>
+                        ))}
                       </tr>
                     ))}
                   </tbody>
