@@ -125,20 +125,15 @@ export default function ReportsPage() {
         let allLoadedLinks: Link[] = [];
         
         while (hasMorePages && isMounted && !signal.aborted) {
-          const linksResponse = await fetch(`/api/reports?limit=20&page=${currentPage}`, { signal });
+          const linksResponse = await fetch(`/api/reports?limit=100&page=${currentPage}`, { signal });
           
           if (!linksResponse.ok) {
             throw new Error(`HTTP ${linksResponse.status}: ${linksResponse.statusText}`);
           }
           
           const data = await linksResponse.json();
-            console.log(`📊 Page ${currentPage} response:`, {
-              receivedLinks: data.links?.length || 0,
-              pagination: data.pagination,
-              hasNextPage: data.pagination?.hasNextPage,
-              isLastPage: data.pagination?.isLastPage,
-              isPartialPage: data.pagination?.isPartialPage
-            });
+          console.log(`📊 Page ${currentPage} loaded ${data.links?.length || 0} links`);
+          
           const newLinks = data.links || [];
           
           if (newLinks.length > 0 && isMounted) {
@@ -151,15 +146,15 @@ export default function ReportsPage() {
               loadedCount: allLoadedLinks.length,
               totalCount: data.summary?.totalLinks || allLoadedLinks.length,
               currentPage: currentPage,
-              isComplete: !data.pagination?.hasNextPage || data.pagination?.isLastPage || data.pagination?.isPartialPage
+              isComplete: !data.pagination?.hasNextPage || newLinks.length < 100
             }));
             
             // Small delay to show progressive loading (remove in production if too slow)
             await new Promise(resolve => setTimeout(resolve, 50));
           }
           
-          // Check if we have more pages - use API pagination data primarily
-          hasMorePages = data.pagination?.hasNextPage === true && !data.pagination?.isLastPage;
+          // Check if we have more pages
+          hasMorePages = data.pagination?.hasNextPage && newLinks.length === 100;
           currentPage++;
           
           // Safety limit to prevent infinite loops
