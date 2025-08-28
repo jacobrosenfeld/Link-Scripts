@@ -388,8 +388,11 @@ export default function ReportsPage() {
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
     
-    const today = new Date().toISOString().split('T')[0];
-    link.setAttribute('download', `report-${filenameSuffix}-${today}.csv`);
+    // Create timestamp for unique filename (YYYY-MM-DD-HHMMSS format) - same as bulk link creator
+    const now = new Date();
+    const timestamp = now.toISOString().replace(/:/g, '').replace(/\..+/, '').replace('T', '-');
+    
+    link.setAttribute('download', `report-${filenameSuffix}-${timestamp}.csv`);
     
     link.style.visibility = 'hidden';
     document.body.appendChild(link);

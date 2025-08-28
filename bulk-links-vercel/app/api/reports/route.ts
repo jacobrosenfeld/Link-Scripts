@@ -12,7 +12,7 @@ interface LinkData {
   title: string;
   description: string;
   date: string;
-  campaign?: string;
+  campaign?: string | number;
 }
 
 interface CampaignData {
@@ -99,13 +99,34 @@ export async function GET(req: Request) {
 
     const links: LinkData[] = data.data?.urls || [];
     
+    // Debug: Log first link structure to understand campaign field
+    if (links.length > 0 && page === 1) {
+      console.log('🔍 First link structure:', JSON.stringify(links[0], null, 2));
+      console.log('🔍 Available campaigns map:', Object.keys(campaignsMap).length, 'campaigns');
+    }
+    
     // Enhance links with campaign names (fast lookup)
-    const enhancedLinks = links.map((link) => ({
-      ...link,
-      campaign: campaignsMap[link.id] || 'No Campaign',
-      uniqueClicks: 0, // Will be fetched individually if needed
-      createdAt: link.date,
-    }));
+    const enhancedLinks = links.map((link) => {
+      // Get campaign name from the campaign ID in the link data
+      let campaignName = 'No Campaign';
+      
+      if (link.campaign) {
+        // If campaign is a number (campaign ID), look it up in the campaigns map
+        if (typeof link.campaign === 'number') {
+          campaignName = campaignsMap[link.campaign] || `Campaign ${link.campaign}`;
+        } else {
+          // If campaign is already a string, use it as is
+          campaignName = link.campaign;
+        }
+      }
+      
+      return {
+        ...link,
+        campaign: campaignName,
+        uniqueClicks: 0, // Will be fetched individually if needed
+        createdAt: link.date,
+      };
+    });
 
     // Calculate quick summary stats for this page
     const totalClicks = enhancedLinks.reduce((sum, link) => sum + link.clicks, 0);
