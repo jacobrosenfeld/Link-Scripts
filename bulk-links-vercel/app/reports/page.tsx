@@ -128,10 +128,17 @@ export default function ReportsPage() {
           const linksResponse = await fetch(`/api/reports?limit=20&page=${currentPage}`, { signal });
           
           if (!linksResponse.ok) {
-            throw new Error(`Failed to fetch page ${currentPage}`);
+            throw new Error(`HTTP ${linksResponse.status}: ${linksResponse.statusText}`);
           }
           
           const data = await linksResponse.json();
+            console.log(`📊 Page ${currentPage} response:`, {
+              receivedLinks: data.links?.length || 0,
+              pagination: data.pagination,
+              hasNextPage: data.pagination?.hasNextPage,
+              isLastPage: data.pagination?.isLastPage,
+              isPartialPage: data.pagination?.isPartialPage
+            });
           const newLinks = data.links || [];
           
           if (newLinks.length > 0 && isMounted) {
@@ -144,15 +151,15 @@ export default function ReportsPage() {
               loadedCount: allLoadedLinks.length,
               totalCount: data.summary?.totalLinks || allLoadedLinks.length,
               currentPage: currentPage,
-              isComplete: !data.pagination?.hasNextPage || newLinks.length < 100
+              isComplete: !data.pagination?.hasNextPage || data.pagination?.isLastPage || data.pagination?.isPartialPage
             }));
             
             // Small delay to show progressive loading (remove in production if too slow)
             await new Promise(resolve => setTimeout(resolve, 50));
           }
           
-          // Check if we have more pages
-          hasMorePages = data.pagination?.hasNextPage && newLinks.length === 100;
+          // Check if we have more pages - use API pagination data primarily
+          hasMorePages = data.pagination?.hasNextPage === true && !data.pagination?.isLastPage;
           currentPage++;
           
           // Safety limit to prevent infinite loops
@@ -691,7 +698,13 @@ export default function ReportsPage() {
                 🔍 Run Report ({filteredAndSortedLinks.length.toLocaleString()} matches)
               </Button>
               <Button 
-                onClick={resetFilters} 
+                onClick={() => window.location.reload()}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                🔄 Refresh Data
+              </Button>
+              <Button 
+                onClick={resetFilters}
                 className="bg-gray-600 hover:bg-gray-700"
               >
                 🔄 Reset Filters

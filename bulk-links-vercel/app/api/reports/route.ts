@@ -199,6 +199,16 @@ export async function GET(req: Request) {
 
     const links: LinkData[] = data.data?.urls || [];
     
+    // Debug: Log pagination data from JJA API
+    console.log('🔍 JJA API pagination data:', {
+      currentpage: data.data?.currentpage,
+      maxpage: data.data?.maxpage,
+      result: data.data?.result,
+      requested_page: page,
+      requested_limit: limit,
+      received_links: links.length
+    });
+    
     // Debug: Log first link structure to understand available fields
     if (links.length > 0 && page === 1) {
       console.log('🔍 First link structure:', JSON.stringify(links[0], null, 2));
@@ -234,8 +244,12 @@ export async function GET(req: Request) {
         page,
         limit,
         totalPages: data.data?.maxpage || 1,
-        hasNextPage: (data.data?.currentpage || 1) < (data.data?.maxpage || 1),
+        hasNextPage: page < (data.data?.maxpage || 1) && links.length === limit,
         hasPrevPage: page > 1,
+        totalLinks: data.data?.result || 0,
+        receivedLinks: links.length,
+        isLastPage: page >= (data.data?.maxpage || 1),
+        isPartialPage: links.length < limit,
       },
       campaigns: Object.keys(campaignsMap).map((id: string) => ({ 
         id: parseInt(id), 
