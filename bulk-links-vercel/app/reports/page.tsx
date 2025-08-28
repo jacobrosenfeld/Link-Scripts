@@ -890,13 +890,15 @@ export default function ReportsPage() {
                               </div>
                             )}
                             {column.key === 'campaign' && (
-                              <button
-                                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-blue-100 hover:text-blue-700 transition-colors cursor-pointer truncate"
-                                title={`Filter by campaign: ${link.campaign}`}
-                                onClick={() => setSelectedCampaign(link.campaign)}
-                              >
-                                {link.campaign}
-                              </button>
+                              <div className="overflow-hidden">
+                                <button
+                                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-blue-100 hover:text-blue-700 transition-colors cursor-pointer max-w-full"
+                                  title={`Filter by campaign: ${link.campaign}`}
+                                  onClick={() => setSelectedCampaign(link.campaign)}
+                                >
+                                  <span className="truncate">{link.campaign}</span>
+                                </button>
+                              </div>
                             )}
                             {column.key === 'clicks' && (
                               <div>
