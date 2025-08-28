@@ -104,9 +104,8 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '100');
-    const includeUniqueClicks = searchParams.get('includeUniqueClicks') === 'true';
     
-    console.log(`🔍 API Request - Page: ${page}, Limit: ${limit}, Include Unique Clicks: ${includeUniqueClicks}`);
+    console.log(`🔍 API Request - Page: ${page}, Limit: ${limit}`);
     
     // Fetch campaigns map (cached)
     const campaignsMap = await getCampaignsMap();
@@ -159,15 +158,10 @@ export async function GET(req: Request) {
         }
       }
 
-      // Fetch unique clicks if requested (this will be slower)
-      let uniqueClicks = 0;
-      if (includeUniqueClicks) {
-        console.log(`🔄 Fetching unique clicks for link ${link.id} (${link.alias})`);
-        uniqueClicks = await getUniqueClicksForLink(link.id);
-        console.log(`📈 Got ${uniqueClicks} unique clicks for link ${link.id}`);
-      } else {
-        console.log(`⏭️ Skipping unique clicks for link ${link.id} (not requested)`);
-      }
+      // Always fetch unique clicks for detailed analytics
+      console.log(`🔄 Fetching unique clicks for link ${link.id} (${link.alias})`);
+      const uniqueClicks = await getUniqueClicksForLink(link.id);
+      console.log(`📈 Got ${uniqueClicks} unique clicks for link ${link.id}`);
       
       return {
         ...link,
