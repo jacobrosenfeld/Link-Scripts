@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { ProtectedLayout } from "@/components/ProtectedLayout";
 import { Header } from "@/components/Header";
 import { Label, Input, Button, Select } from "@/components/Field";
@@ -33,12 +33,28 @@ interface Summary {
 type SortField = 'description' | 'shorturl' | 'longurl' | 'campaign' | 'clicks' | 'createdAt';
 type SortDirection = 'asc' | 'desc';
 
+interface LoadingState {
+  isLoading: boolean;
+  loadedCount: number;
+  totalCount: number;
+  currentPage: number;
+  isComplete: boolean;
+  error?: string;
+}
+
 export default function ReportsPage() {
-  // Core data states - preload everything in background
+  // Progressive loading states
   const [allLinks, setAllLinks] = useState<Link[]>([]);
   const [allCampaigns, setAllCampaigns] = useState<Campaign[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingState, setLoadingState] = useState<LoadingState>({
+    isLoading: false,
+    loadedCount: 0,
+    totalCount: 0,
+    currentPage: 0,
+    isComplete: false
+  });
   const [error, setError] = useState<string>("");
+  const abortControllerRef = useRef<AbortController | null>(null);
   
   // Filter states
   const [selectedCampaign, setSelectedCampaign] = useState<string>("all");
@@ -52,44 +68,110 @@ export default function ReportsPage() {
   const [sortField, setSortField] = useState<SortField>('createdAt');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
-  // Background data loading - fetch everything at once
+  // Progressive data loading with real-time updates
   useEffect(() => {
-    async function loadAllData() {
+    let isMounted = true;
+    
+    async function loadDataProgressively() {
+      // Cancel any existing load operation
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      
+      // Create new abort controller for this operation
+      abortControllerRef.current = new AbortController();
+      const signal = abortControllerRef.current.signal;
+      
       try {
-        setLoading(true);
         setError("");
+        setLoadingState({
+          isLoading: true,
+          loadedCount: 0,
+          totalCount: 0,
+          currentPage: 1,
+          isComplete: false
+        });
         
-        // Fetch all data in parallel for speed
-        const [linksResponse, campaignsResponse] = await Promise.all([
-          fetch('/api/reports?limit=10000'), // Get all links
-          fetch('/api/campaigns?limit=1000') // Get all campaigns
-        ]);
-        
-        if (!linksResponse.ok) {
-          throw new Error('Failed to fetch links data');
-        }
-        
-        const reportsData = await linksResponse.json();
-        setAllLinks(reportsData.links || []);
-        
-        // Handle campaigns response
-        if (campaignsResponse.ok) {
+        // First, quickly load campaigns (small dataset)
+        const campaignsResponse = await fetch('/api/campaigns?limit=1000', { signal });
+        if (campaignsResponse.ok && isMounted) {
           const campaignsData = await campaignsResponse.json();
           setAllCampaigns(campaignsData.campaigns || []);
-        } else {
-          // Use campaigns from reports data as fallback
-          setAllCampaigns(reportsData.campaigns || []);
+        }
+        
+        // Start progressive link loading
+        let currentPage = 1;
+        let hasMorePages = true;
+        let allLoadedLinks: Link[] = [];
+        
+        while (hasMorePages && isMounted && !signal.aborted) {
+          const linksResponse = await fetch(`/api/reports?limit=100&page=${currentPage}`, { signal });
+          
+          if (!linksResponse.ok) {
+            throw new Error(`Failed to fetch page ${currentPage}`);
+          }
+          
+          const data = await linksResponse.json();
+          const newLinks = data.links || [];
+          
+          if (newLinks.length > 0 && isMounted) {
+            allLoadedLinks = [...allLoadedLinks, ...newLinks];
+            setAllLinks([...allLoadedLinks]); // Trigger re-render with new data
+            
+            // Update loading progress
+            setLoadingState(prev => ({
+              ...prev,
+              loadedCount: allLoadedLinks.length,
+              totalCount: data.summary?.totalLinks || allLoadedLinks.length,
+              currentPage: currentPage,
+              isComplete: !data.pagination?.hasNextPage || newLinks.length < 100
+            }));
+            
+            // Small delay to show progressive loading (remove in production if too slow)
+            await new Promise(resolve => setTimeout(resolve, 50));
+          }
+          
+          // Check if we have more pages
+          hasMorePages = data.pagination?.hasNextPage && newLinks.length === 100;
+          currentPage++;
+          
+          // Safety limit to prevent infinite loops
+          if (currentPage > 100) {
+            hasMorePages = false;
+          }
+        }
+        
+        if (isMounted && !signal.aborted) {
+          setLoadingState(prev => ({
+            ...prev,
+            isLoading: false,
+            isComplete: true
+          }));
         }
         
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load data');
-      } finally {
-        setLoading(false);
+        if (isMounted && !signal.aborted) {
+          const errorMessage = err instanceof Error ? err.message : 'Failed to load data';
+          setError(errorMessage);
+          setLoadingState(prev => ({
+            ...prev,
+            isLoading: false,
+            error: errorMessage
+          }));
+        }
       }
     }
     
-    loadAllData();
-  }, []);
+    loadDataProgressively();
+    
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []); // Only run once on mount
 
   // Client-side filtering and sorting (instant, no API calls)
   const filteredAndSortedLinks = useMemo(() => {
@@ -331,7 +413,7 @@ export default function ReportsPage() {
   };
 
   // Loading state
-  if (loading) {
+  if (loadingState.isLoading && allLinks.length === 0) {
     return (
       <ProtectedLayout>
         <Header title="Link Reports" />
@@ -339,10 +421,13 @@ export default function ReportsPage() {
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <div className="text-xl text-gray-600 dark:text-gray-300 mb-4">
-                Loading all links and campaigns...
+                🚀 Starting data load...
               </div>
               <div className="text-sm text-gray-500 dark:text-gray-400">
-                This may take a moment as we preload all data for fast filtering
+                Loading campaigns and preparing for link data
+              </div>
+              <div className="mt-4 w-64 bg-gray-200 rounded-full h-2">
+                <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '10%' }}></div>
               </div>
             </div>
           </div>
@@ -387,116 +472,189 @@ export default function ReportsPage() {
       <Header title="Link Reports" />
       <div className="max-w-7xl mx-auto px-4 py-8">
         
-        {/* Data Summary Header */}
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-medium text-blue-800 dark:text-blue-200">
-                Data Loaded Successfully
-              </h3>
-              <p className="text-blue-600 dark:text-blue-300">
-                {allLinks.length.toLocaleString()} links across {allCampaigns.length} campaigns loaded and ready for instant filtering
-              </p>
+        {/* Real-time Loading Progress */}
+        {loadingState.isLoading && allLinks.length > 0 && (
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <h3 className="text-lg font-medium text-blue-800 dark:text-blue-200">
+                  📡 Loading Data in Real-time
+                </h3>
+                <p className="text-blue-600 dark:text-blue-300">
+                  {loadingState.loadedCount.toLocaleString()} of ~{loadingState.totalCount.toLocaleString()} links loaded
+                  {loadingState.currentPage > 1 && ` (Page ${loadingState.currentPage})`}
+                </p>
+              </div>
+              <div className="text-2xl animate-spin">⚡</div>
             </div>
-            <div className="text-2xl">📊</div>
+            <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2">
+              <div 
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                style={{ 
+                  width: `${Math.min(100, (loadingState.loadedCount / Math.max(loadingState.totalCount, loadingState.loadedCount)) * 100)}%` 
+                }}
+              ></div>
+            </div>
+            <p className="text-xs text-blue-500 dark:text-blue-400 mt-1">
+              💡 You can start filtering the loaded data while more loads in the background
+            </p>
           </div>
-        </div>
+        )}
 
-        {/* Filters Section */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-            Filters & Search
-          </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-            {/* Campaign Filter */}
-            <div>
-              <Label htmlFor="campaign">Campaign</Label>
-              <Select
-                id="campaign"
-                value={selectedCampaign}
-                onChange={(e) => setSelectedCampaign(e.target.value)}
+        {/* Completion Notice */}
+        {loadingState.isComplete && !loadingState.isLoading && (
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-medium text-green-800 dark:text-green-200">
+                  ✅ All Data Loaded Successfully
+                </h3>
+                <p className="text-green-600 dark:text-green-300">
+                  {allLinks.length.toLocaleString()} links across {allCampaigns.length} campaigns ready for instant filtering
+                </p>
+              </div>
+              <div className="text-2xl">🎉</div>
+            </div>
+          </div>
+        )}
+
+        {/* Data Summary Header - show as soon as we have some data */}
+        {allLinks.length > 0 && (
+          <div className="bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-800 rounded-lg p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200">
+                  📊 Dataset Overview
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300">
+                  {allLinks.length.toLocaleString()} links • {allCampaigns.length} campaigns
+                  {loadingState.isLoading && " • Still loading more..."}
+                </p>
+              </div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                Last updated: {new Date().toLocaleTimeString()}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Filters Section - available as soon as we have data */}
+        {allLinks.length > 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+              🔍 Filters & Search
+              <span className="text-sm font-normal text-gray-500 ml-2">
+                (Filtering {allLinks.length.toLocaleString()} loaded links)
+              </span>
+            </h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+              {/* Campaign Filter */}
+              <div>
+                <label htmlFor="campaign" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Campaign
+                </label>
+                <Select
+                  id="campaign"
+                  value={selectedCampaign}
+                  onChange={(e) => setSelectedCampaign(e.target.value)}
+                >
+                  <option value="all">All Campaigns ({allCampaigns.length})</option>
+                  {allCampaigns.map((campaign) => (
+                    <option key={campaign.id} value={campaign.name}>
+                      {campaign.name}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+
+              {/* Search Bar */}
+              <div>
+                <label htmlFor="search" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Search Links
+                </label>
+                <Input
+                  id="search"
+                  type="text"
+                  placeholder="Search description, URLs, title..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+
+              {/* Minimum Clicks Filter */}
+              <div>
+                <label htmlFor="minClicks" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Minimum Clicks
+                </label>
+                <Input
+                  id="minClicks"
+                  type="number"
+                  placeholder="0"
+                  min="0"
+                  value={minClicks}
+                  onChange={(e) => setMinClicks(e.target.value)}
+                />
+              </div>
+
+              {/* Date From */}
+              <div>
+                <label htmlFor="dateFrom" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Created After
+                </label>
+                <Input
+                  id="dateFrom"
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                />
+              </div>
+
+              {/* Date To */}
+              <div>
+                <label htmlFor="dateTo" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Created Before
+                </label>
+                <Input
+                  id="dateTo"
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-4 items-center">
+              <Button 
+                onClick={runReport} 
+                className="bg-blue-600 hover:bg-blue-700"
+                disabled={filteredAndSortedLinks.length === 0}
               >
-                <option value="all">All Campaigns</option>
-                {allCampaigns.map((campaign) => (
-                  <option key={campaign.id} value={campaign.name}>
-                    {campaign.name}
-                  </option>
-                ))}
-              </Select>
-            </div>
-
-            {/* Search Bar */}
-            <div>
-              <Label htmlFor="search">Search Links</Label>
-              <Input
-                id="search"
-                type="text"
-                placeholder="Search description, URLs, title..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-
-            {/* Minimum Clicks Filter */}
-            <div>
-              <Label htmlFor="minClicks">Minimum Clicks</Label>
-              <Input
-                id="minClicks"
-                type="number"
-                placeholder="0"
-                min="0"
-                value={minClicks}
-                onChange={(e) => setMinClicks(e.target.value)}
-              />
-            </div>
-
-            {/* Date From */}
-            <div>
-              <Label htmlFor="dateFrom">Created After</Label>
-              <Input
-                id="dateFrom"
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-              />
-            </div>
-
-            {/* Date To */}
-            <div>
-              <Label htmlFor="dateTo">Created Before</Label>
-              <Input
-                id="dateTo"
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-              />
+                🔍 Run Report ({filteredAndSortedLinks.length.toLocaleString()} matches)
+              </Button>
+              <Button 
+                onClick={resetFilters} 
+                className="bg-gray-600 hover:bg-gray-700"
+              >
+                🔄 Reset Filters
+              </Button>
+              <Button 
+                onClick={exportToCSV}
+                className="bg-green-600 hover:bg-green-700"
+                disabled={!showTable || filteredAndSortedLinks.length === 0}
+              >
+                📥 Export Current View
+              </Button>
+              {loadingState.isLoading && (
+                <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+                  <span className="animate-pulse">🔄</span>
+                  <span className="ml-1">More data loading...</span>
+                </div>
+              )}
             </div>
           </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-4 items-center">
-            <Button 
-              onClick={runReport} 
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              🔍 Run Report ({filteredAndSortedLinks.length.toLocaleString()} links)
-            </Button>
-            <Button 
-              onClick={resetFilters} 
-              className="bg-gray-600 hover:bg-gray-700"
-            >
-              🔄 Reset Filters
-            </Button>
-            <Button 
-              onClick={exportToCSV}
-              className="bg-green-600 hover:bg-green-700"
-              disabled={!showTable}
-            >
-              📥 Export Current View
-            </Button>
-          </div>
-        </div>
+        )}
 
         {/* Summary Statistics */}
         {showTable && (
@@ -684,20 +842,22 @@ export default function ReportsPage() {
           </div>
         )}
 
-        {/* Empty State - shown when no table is displayed yet */}
-        {!showTable && (
+        {/* Empty State - shown when no data is loaded yet */}
+        {allLinks.length === 0 && !loadingState.isLoading && !error && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center">
-            <div className="text-6xl mb-4">📊</div>
+            <div className="text-6xl mb-4">�</div>
             <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">
-              Ready to Generate Report
+              Ready to Load Link Data
             </h3>
             <p className="text-gray-600 dark:text-gray-300 mb-6">
-              All {allLinks.length.toLocaleString()} links are loaded and ready. 
-              Apply filters above and click "Run Report" to view your data.
+              Click "Start Loading" to begin progressive data loading with real-time updates.
             </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              💡 Tip: Use the campaign dropdown and search bar together for targeted reports
-            </p>
+            <Button 
+              onClick={() => window.location.reload()}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              🔄 Start Loading Data
+            </Button>
           </div>
         )}
       </div>
