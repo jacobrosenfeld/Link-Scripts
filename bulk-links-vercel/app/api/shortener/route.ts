@@ -12,8 +12,6 @@ export async function POST(req: Request) {
       domain, 
       campaign, 
       description, 
-      metatitle,
-      metadescription,
       type,
       password,
       expiry,
@@ -43,9 +41,14 @@ export async function POST(req: Request) {
     if (custom) payload.custom = custom;
     if (domain) payload.domain = domain;
     if (campaign) payload.campaign = campaign;
-    if (description) payload.description = description;
-    if (metatitle) payload.metatitle = metatitle;
-    if (metadescription) payload.metadescription = metadescription;
+    
+    // Use the same value for description, metatitle, and metadescription
+    if (description) {
+      payload.description = description;
+      payload.metatitle = description;
+      payload.metadescription = description;
+    }
+    
     if (type) payload.type = type;
     if (password) payload.password = password;
     if (expiry) payload.expiry = expiry;
