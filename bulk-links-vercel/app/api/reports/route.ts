@@ -9,6 +9,7 @@ interface LinkData {
   shorturl: string;
   longurl: string;
   clicks: number;
+  uniqueClicks?: number;
   title: string;
   description: string;
   date: string;
@@ -63,12 +64,36 @@ async function getCampaignsMap(): Promise<Record<number, string>> {
   return {};
 }
 
+// Function to fetch unique clicks for a single link
+async function getUniqueClicksForLink(linkId: number): Promise<number> {
+  try {
+    const response = await fetch(`${JJA_BASE}/url/${linkId}`, {
+      headers: {
+        "Authorization": `Bearer ${JJA_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.error === 0 || data.error === "0") {
+        return data.data?.uniqueClicks || 0;
+      }
+    }
+  } catch (error) {
+    console.error(`Error fetching unique clicks for link ${linkId}:`, error);
+  }
+  
+  return 0;
+}
+
 // GET - Get links with pagination for progressive loading
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '100');
+    const includeUniqueClicks = searchParams.get('includeUniqueClicks') === 'true';
     
     // Fetch campaigns map (cached)
     const campaignsMap = await getCampaignsMap();
@@ -99,14 +124,15 @@ export async function GET(req: Request) {
 
     const links: LinkData[] = data.data?.urls || [];
     
-    // Debug: Log first link structure to understand campaign field
+    // Debug: Log first link structure to understand available fields
     if (links.length > 0 && page === 1) {
       console.log('🔍 First link structure:', JSON.stringify(links[0], null, 2));
+      console.log('🔍 Available fields:', Object.keys(links[0]));
       console.log('🔍 Available campaigns map:', Object.keys(campaignsMap).length, 'campaigns');
     }
     
-    // Enhance links with campaign names (fast lookup)
-    const enhancedLinks = links.map((link) => {
+    // Enhance links with campaign names and optionally unique clicks (fast lookup)
+    const enhancedLinks = await Promise.all(links.map(async (link) => {
       // Get campaign name from the campaign ID in the link data
       let campaignName = 'No Campaign';
       
@@ -119,17 +145,24 @@ export async function GET(req: Request) {
           campaignName = link.campaign;
         }
       }
+
+      // Fetch unique clicks if requested (this will be slower)
+      let uniqueClicks = 0;
+      if (includeUniqueClicks) {
+        uniqueClicks = await getUniqueClicksForLink(link.id);
+      }
       
       return {
         ...link,
         campaign: campaignName,
-        uniqueClicks: 0, // Will be fetched individually if needed
+        uniqueClicks,
         createdAt: link.date,
       };
-    });
+    }));
 
     // Calculate quick summary stats for this page
     const totalClicks = enhancedLinks.reduce((sum, link) => sum + link.clicks, 0);
+    const totalUniqueClicks = enhancedLinks.reduce((sum, link) => sum + (link.uniqueClicks || 0), 0);
     
     // Prepare response
     const responseData = {
@@ -137,12 +170,12 @@ export async function GET(req: Request) {
       summary: {
         totalLinks: data.data?.result || enhancedLinks.length,
         totalClicks,
-        totalUniqueClicks: 0, // Not calculated for performance
+        totalUniqueClicks,
         clicksByUrl: enhancedLinks.reduce((acc, link) => {
           acc[link.shorturl] = {
             title: link.title || link.description || link.shorturl,
             clicks: link.clicks,
-            uniqueClicks: 0,
+            uniqueClicks: link.uniqueClicks || 0,
           };
           return acc;
         }, {} as Record<string, { title: string; clicks: number; uniqueClicks: number }>),

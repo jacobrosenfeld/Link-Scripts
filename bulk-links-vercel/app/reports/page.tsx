@@ -87,6 +87,7 @@ export default function ReportsPage() {
   const [showTable, setShowTable] = useState(false);
   const [sortField, setSortField] = useState<SortField>('createdAt');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [includeUniqueClicks, setIncludeUniqueClicks] = useState(false);
 
   // Progressive data loading with real-time updates
   useEffect(() => {
@@ -125,7 +126,7 @@ export default function ReportsPage() {
         let allLoadedLinks: Link[] = [];
         
         while (hasMorePages && isMounted && !signal.aborted) {
-          const linksResponse = await fetch(`/api/reports?limit=100&page=${currentPage}`, { signal });
+          const linksResponse = await fetch(`/api/reports?limit=100&page=${currentPage}&includeUniqueClicks=${includeUniqueClicks}`, { signal });
           
           if (!linksResponse.ok) {
             throw new Error(`Failed to fetch page ${currentPage}`);
@@ -191,7 +192,7 @@ export default function ReportsPage() {
         abortControllerRef.current.abort();
       }
     };
-  }, []); // Only run once on mount
+  }, [includeUniqueClicks]); // Reload when unique clicks option changes
 
   // Client-side filtering and sorting (instant, no API calls)
   const filteredAndSortedLinks = useMemo(() => {
@@ -679,6 +680,21 @@ export default function ReportsPage() {
                   onChange={(e) => setDateTo(e.target.value)}
                 />
               </div>
+            </div>
+
+            {/* Options */}
+            <div className="mb-4">
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={includeUniqueClicks}
+                  onChange={(e) => setIncludeUniqueClicks(e.target.checked)}
+                  className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  Include unique clicks data (slower loading)
+                </span>
+              </label>
             </div>
 
             {/* Action Buttons */}
