@@ -6,6 +6,6 @@ This is a repo of Google Apps Scripts to interact with [Gem Pixel Premium URL Sh
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/M4M314FOFQ)
 
-## Bulk Links on Vercel — 1.2.0
+## Bulk Links on Vercel — 1.2.2
 
-The `bulk-links-vercel` app now includes a Reporting UI that preloads link data, supports client-side filtering and searching, and exports CSVs that reflect the current filtered view. See `bulk-links-vercel/RELEASE-1.2.0.md` for full release notes.
+The `bulk-links-vercel` app now includes a Reporting UI with advanced analytics, optimized API performance, and enhanced timeout handling. Latest improvements include reduced API request limits to 50 for better performance and 10-second timeout protection to prevent delays. See `bulk-links-vercel/README-CHANGELOG.md` for complete version history.

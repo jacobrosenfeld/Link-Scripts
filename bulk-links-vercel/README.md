@@ -1,6 +1,6 @@
 # Bulk Link Creator & Analytics Platform
 
-**Version 1.2.0** — A powerful Next.js application for creating, managing, and analyzing short links through the JJA Link Shortener API.
+**Version 1.2.2** — A powerful Next.js application for creating, managing, and analyzing short links through the JJA Link Shortener API.
 
 ## 🚀 Features
 
@@ -21,11 +21,12 @@
 - **Direct Link Editing**: Edit links directly in JJA interface from table rows
 
 ### 🎯 User Experience
-- **Progressive Loading**: Background data preloading with status indicators
+- **Progressive Loading**: Background data preloading with status indicators and optimized request batching
 - **Responsive Design**: Optimized for desktop, tablet, and mobile devices
 - **Header Navigation**: Intuitive navigation with active page highlighting
-- **Error Handling**: Graceful error states with retry functionality
+- **Error Handling**: Graceful error states with retry functionality and timeout protection
 - **Authentication**: Secure login system with session management
+- **Performance Optimizations** *(New in v1.2.2)*: Reduced API request limits and enhanced timeout handling for faster, more reliable operations
 
 
 ## UI/UX Features
@@ -204,24 +205,22 @@ The app integrates with the JJA Link API for:
 - **Authentication**: Bearer token authentication with retry logic
 
 ## Recent Updates
-- ✅ **New Campaign Workflow**: One-click button to reset form and start fresh campaign
-- ✅ **Case Preservation**: URLs now maintain original text capitalization (SpringSale → SpringSale)
-- ✅ **Responsive Publisher Grid**: Column-first layout with 4→2→1 responsive breakpoints
-- ✅ **Enhanced User Experience**: Improved workflow efficiency and form management
-- ✅ **Flexible URL Patterns**: Support for both with/without publication URL structures
-- ✅ **Smart Date Defaults**: Auto-populates today's date in MM-DD-YY format
-- ✅ **Enhanced URL Validation**: Real-time validation with visual feedback
-- ✅ **User Confirmations**: Prompts when creating links without publications
-- ✅ **Improved CSV Export**: Clean column structure with logical data organization
-- ✅ **Dynamic URL Previews**: Live pattern updates based on publisher selection
-- ✅ **CSV Export**: Export generated links to spreadsheet format
-- ✅ **Dynamic Domains**: Replaced static domain with API-driven dropdown
+- ✅ **API Performance Optimizations** *(v1.2.2)*: Reduced request limits to 50 for faster loading and added 10-second timeout protection
+- ✅ **Timeout Handling** *(v1.2.2)*: Enhanced error handling with graceful timeout management and user-friendly messages
+- ✅ **Response Time Improvements** *(v1.2.2)*: Optimized internal delays and request patterns for better performance
+- ✅ **Advanced Reporting Interface** *(v1.2.0)*: Comprehensive analytics dashboard with filtering and export capabilities
+- ✅ **Enhanced Table Features** *(v1.2.1)*: Resizable columns, pagination controls, and direct link editing
+- ✅ **Navigation Improvements** *(v1.2.1)*: Header navigation with active state highlighting and clickable logo
 - ✅ **Theme System**: Complete light/dark mode implementation
 - ✅ **UI Improvements**: Enhanced navigation, loading states, and responsiveness
 - ✅ **Admin UX**: Live preview and better publisher management
+
+*For detailed release notes, see `RELEASE-1.2.2.md`, `RELEASE-1.2.0.md`, and `README-CHANGELOG.md`.*
 
 ## Development Notes
 - TypeScript errors in development are expected due to JSX configuration
 - All functionality works correctly in production builds
 - Environment variables are required for full functionality
 - Blob storage handles publisher data with automatic cleanup of old versions
+- API requests are optimized with 50-item limits and 10-second timeouts for better performance
+- Unique clicks fetching is temporarily disabled to prevent timeout issues during high-volume operations

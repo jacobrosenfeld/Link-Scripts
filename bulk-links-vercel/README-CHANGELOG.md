@@ -3,6 +3,28 @@ Bulk Links — Changelog
 
 This document summarizes the feature work, bug fixes, and ongoing debugging performed in this workspace during the current development session.
 
+## 1.2.2 — API Performance & Timeout Optimizations (2025-08-28)
+
+### ⚡ Performance Improvements
+- **API Request Limit Optimization**: Reduced default request limit from higher values to 50 requests per page to prevent timeout issues
+- **Request Timeout Protection**: Implemented 10-second timeout with AbortController for all API requests to prevent hanging
+- **Faster Response Times**: Reduced internal delay from higher values to 50ms for faster data loading
+- **Graceful Timeout Handling**: Added user-friendly timeout error messages with actionable advice ("try reducing the page size")
+
+### 🔧 Technical Optimizations
+- **Unique Clicks Optimization**: Temporarily disabled unique clicks fetching to avoid API timeouts while maintaining core functionality
+- **Error Recovery**: Enhanced error handling for timeout scenarios with clear user feedback
+- **Server Resource Management**: Optimized API request patterns to reduce server load and improve reliability
+- **Request Cancellation**: Proper cleanup of ongoing requests when timeouts occur
+
+### 📊 Reporting Enhancements
+- **Faster Page Loading**: Reports page now loads more quickly with optimized request batching
+- **Better Pagination**: Default page size reduced to 50 items for improved performance
+- **Timeout Prevention**: Proactive measures to prevent long-running requests from timing out
+- **Status Messaging**: Clear indicators when skipping resource-intensive operations for performance
+
+*See `RELEASE-1.2.2.md` for complete performance optimization details and technical specifications.*
+
 ## 1.2.1 — Enhanced Table & Navigation (2025-08-26)
 
 ### 🎯 Navigation Improvements
