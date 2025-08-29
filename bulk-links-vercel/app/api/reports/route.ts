@@ -64,49 +64,6 @@ async function getCampaignsMap(): Promise<Record<number, string>> {
   return {};
 }
 
-// Function to add delay between requests
-function delay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-// Function to fetch unique clicks for a single link with rate limiting
-async function getUniqueClicksForLink(linkId: number): Promise<number> {
-  try {
-    console.log(`🔍 Fetching unique clicks for link ID: ${linkId}`);
-    
-    // Add a small delay to avoid overwhelming the server
-    await delay(50); // Reduced to 50ms for faster loading
-    
-    const response = await fetch(`${JJA_BASE}/url/${linkId}`, {
-      headers: {
-        "Authorization": `Bearer ${JJA_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    console.log(`📊 Response status for link ${linkId}:`, response.status);
-
-    if (response.ok) {
-      const data = await response.json();
-      console.log(`📊 Response data for link ${linkId}:`, JSON.stringify(data, null, 2));
-      
-      if (data.error === 0 || data.error === "0") {
-        const uniqueClicks = data.data?.uniqueClicks || 0;
-        console.log(`✅ Unique clicks for link ${linkId}:`, uniqueClicks);
-        return uniqueClicks;
-      } else {
-        console.log(`❌ API error for link ${linkId}:`, data.message);
-      }
-    } else {
-      console.log(`❌ HTTP error for link ${linkId}:`, response.status, response.statusText);
-    }
-  } catch (error) {
-    console.error(`❌ Exception fetching unique clicks for link ${linkId}:`, error);
-  }
-  
-  return 0;
-}
-
 // GET - Get links with pagination for progressive loading
 export async function GET(req: Request) {
   try {
@@ -180,8 +137,8 @@ export async function GET(req: Request) {
       console.log('🔍 Available campaigns map:', Object.keys(campaignsMap).length, 'campaigns');
     }
     
-    // Enhance links with campaign names (skip unique clicks for now to avoid timeouts)
-    console.log(`🚀 Processing ${links.length} links (skipping unique clicks to prevent timeout)`);
+    // Enhance links with campaign names only (no unique clicks for performance)
+    console.log(`🚀 Processing ${links.length} links with campaign mapping only`);
     const enhancedLinks = links.map((link) => {
       // Get campaign name from the campaign ID in the link data
       let campaignName = 'No Campaign';
@@ -199,14 +156,12 @@ export async function GET(req: Request) {
       return {
         ...link,
         campaign: campaignName,
-        uniqueClicks: 0, // Set to 0 for now to avoid timeout
         createdAt: link.date,
       };
     });
 
     // Calculate quick summary stats for this page
     const totalClicks = enhancedLinks.reduce((sum, link) => sum + link.clicks, 0);
-    const totalUniqueClicks = enhancedLinks.reduce((sum, link) => sum + (link.uniqueClicks || 0), 0);
     
     // Prepare response
     const responseData = {
@@ -214,15 +169,13 @@ export async function GET(req: Request) {
       summary: {
         totalLinks: data.data?.result || enhancedLinks.length,
         totalClicks,
-        totalUniqueClicks,
         clicksByUrl: enhancedLinks.reduce((acc, link) => {
           acc[link.shorturl] = {
             title: link.title || link.description || link.shorturl,
             clicks: link.clicks,
-            uniqueClicks: link.uniqueClicks || 0,
           };
           return acc;
-        }, {} as Record<string, { title: string; clicks: number; uniqueClicks: number }>),
+        }, {} as Record<string, { title: string; clicks: number }>),
       },
       pagination: {
         page,

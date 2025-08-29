@@ -10,7 +10,6 @@ interface Link {
   shorturl: string;
   longurl: string;
   clicks: number;
-  uniqueClicks: number;
   title: string;
   description: string;
   date: string;
@@ -26,8 +25,7 @@ interface Campaign {
 interface Summary {
   totalLinks: number;
   totalClicks: number;
-  totalUniqueClicks: number;
-  clicksByUrl: Record<string, { title: string; clicks: number; uniqueClicks: number }>;
+  clicksByUrl: Record<string, { title: string; clicks: number }>;
 }
 
 type SortField = 'description' | 'shorturl' | 'longurl' | 'campaign' | 'clicks' | 'createdAt';
@@ -289,13 +287,11 @@ export default function ReportsPage() {
   // Calculate summary stats for current filtered view
   const currentViewSummary = useMemo(() => {
     const totalClicks = filteredAndSortedLinks.reduce((sum: number, link: Link) => sum + link.clicks, 0);
-    const totalUniqueClicks = filteredAndSortedLinks.reduce((sum: number, link: Link) => sum + (link.uniqueClicks || 0), 0);
     
     const clicksByUrl = filteredAndSortedLinks.reduce((acc: Record<string, any>, link: Link) => {
       acc[link.shorturl] = {
         title: link.description || link.title || link.shorturl,
         clicks: link.clicks,
-        uniqueClicks: link.uniqueClicks || 0,
       };
       return acc;
     }, {});
@@ -303,7 +299,6 @@ export default function ReportsPage() {
     return {
       totalLinks: filteredAndSortedLinks.length,
       totalClicks,
-      totalUniqueClicks,
       clicksByUrl,
     };
   }, [filteredAndSortedLinks]);
@@ -384,16 +379,13 @@ export default function ReportsPage() {
         'Created At'
       ];
 
-      const csvData = [
-        headers.join(','),
-        '',
-        '--- SUMMARY ---',
-        `"Total Links","0","","","","","",""`,
-        `"Total Clicks","0","","","","","",""`,
-        `"Total Unique Clicks","0","","","","","",""`
-      ].join('\n');
-
-      downloadCSV(csvData, 'empty');
+        const csvData = [
+          headers.join(','),
+          '',
+          '--- SUMMARY ---',
+          `"Total Links","0","","","",""`,
+          `"Total Clicks","0","","","",""`
+        ].join('\n');      downloadCSV(csvData, 'empty');
       return;
     }
 
@@ -403,7 +395,6 @@ export default function ReportsPage() {
       'Destination URL',
       'Campaign',
       'Total Clicks',
-      'Unique Clicks',
       'Created At'
     ];
 
@@ -415,14 +406,12 @@ export default function ReportsPage() {
         `"${link.longurl}"`,
         `"${link.campaign}"`,
         link.clicks.toString(),
-        (link.uniqueClicks || 0).toString(),
         `"${new Date(link.createdAt).toLocaleDateString()}"`
       ].join(',')),
       '',
       '--- SUMMARY ---',
-      `"Total Links","${currentViewSummary.totalLinks}","","","","",""`,
-      `"Total Clicks","${currentViewSummary.totalClicks}","","","","",""`,
-      `"Total Unique Clicks","${currentViewSummary.totalUniqueClicks}","","","","",""`
+      `"Total Links","${currentViewSummary.totalLinks}","","","",""`,
+      `"Total Clicks","${currentViewSummary.totalClicks}","","","",""`
     ].join('\n');
 
     // Generate filename based on current filters
@@ -727,7 +716,7 @@ export default function ReportsPage() {
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
               Current View Summary
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
                 <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                   {currentViewSummary.totalLinks.toLocaleString()}
@@ -739,12 +728,6 @@ export default function ReportsPage() {
                   {currentViewSummary.totalClicks.toLocaleString()}
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-300">Total Clicks</div>
-              </div>
-              <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
-                <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                  {currentViewSummary.totalUniqueClicks.toLocaleString()}
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-300">Unique Clicks</div>
               </div>
             </div>
           </div>
@@ -893,14 +876,7 @@ export default function ReportsPage() {
                               </div>
                             )}
                             {column.key === 'clicks' && (
-                              <div>
-                                <div className="font-bold text-lg">{link.clicks.toLocaleString()}</div>
-                                {link.uniqueClicks !== undefined && (
-                                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                                    {link.uniqueClicks.toLocaleString()} unique
-                                  </div>
-                                )}
-                              </div>
+                              <div className="font-bold text-lg">{link.clicks.toLocaleString()}</div>
                             )}
                             {column.key === 'createdAt' && (
                               <div>
