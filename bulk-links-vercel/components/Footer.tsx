@@ -20,8 +20,10 @@ export function Footer() {
           Contact Support
         </a>
       </div>
-      <div className="text-xs text-[color:var(--muted)] mt-2">
-        v{version}
+      <div className="text-xs mt-2">
+        <code className="px-2 py-1 rounded bg-[color:var(--card)] border border-[color:var(--border)] text-blue-300 font-mono">
+          v{version}
+        </code>
       </div>
     </footer>
   );
