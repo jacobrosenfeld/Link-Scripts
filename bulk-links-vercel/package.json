@@ -1,7 +1,7 @@
 {
   "name": "bulk-link-creator",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.2.3",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

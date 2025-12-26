@@ -1,5 +1,8 @@
+import packageJson from '../package.json';
+
 export function Footer() {
   const currentYear = new Date().getFullYear();
+  const version = packageJson.version;
 
   return (
     <footer className="mt-8 pt-6 border-t border-[color:var(--border)] text-center space-y-2">
@@ -16,6 +19,9 @@ export function Footer() {
         >
           Contact Support
         </a>
+      </div>
+      <div className="text-xs text-[color:var(--muted)] mt-2">
+        v{version}
       </div>
     </footer>
   );
