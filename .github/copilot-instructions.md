@@ -2,7 +2,7 @@
 
 ## Repository Overview
 
-This repository contains tools for interacting with the JJA Link Shortener (Gem Pixel Premium URL Shortener) API:
+This repository contains tools for interacting with the JJA Link Shortener API (built on Gem Pixel Premium URL Shortener):
 
 1. **Google Apps Script** (`Get-All-Links-and-Clicks.js`) - Fetches link data and displays it in Google Sheets
 2. **Bulk Links Vercel App** (`bulk-links-vercel/`) - A Next.js application for creating, managing, and analyzing short links
@@ -134,7 +134,6 @@ npm run lint         # Run ESLint
 The bulk-links-vercel app requires these environment variables (see `bulk-links-vercel/.env.example`):
 
 ```bash
-# JJA API Configuration
 JJA_API_KEY=YOUR_JJA_API_KEY
 JJA_BASE=https://link.josephjacobs.org/api
 DEFAULT_DOMAIN=adtracking.link
@@ -144,8 +143,8 @@ AUTH_SECRET=your-very-long-random-secret-key-for-jwt-signing
 LOGIN_USERNAME=your-username
 LOGIN_PASSWORD=your-secure-password
 
-# Vercel Blob Storage
-BLOB_READ_WRITE_TOKEN=your-vercel-blob-token
+# Vercel Blob Storage (Free)
+BLOB_READ_WRITE_TOKEN= # Get this from Vercel Dashboard > Storage > Create Blob Store
 ```
 
 ## Testing & Quality
